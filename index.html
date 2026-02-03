@@ -328,12 +328,21 @@
                 </div>
                 
                 <div class="capacity-box" style="background: #ff6b6b15;">
-                    <div class="capacity-title">Maintenance Loss Rate</div>
+                    <div class="capacity-title">Current Loss Rate (Feb)</div>
                     <div>
-                        <span class="capacity-value" id="loss-rate" style="color: #ff6b6b;">0</span>
+                        <span class="capacity-value" id="current-loss-rate" style="color: #ff6b6b;">0</span>
                         <span class="capacity-unit">%</span>
                     </div>
-                    <div class="stat-detail" id="loss-detail">Loss: 0 kt</div>
+                    <div class="stat-detail" id="current-loss-detail">Loss: 0 kt</div>
+                </div>
+                
+                <div class="capacity-box" style="background: #4169e115;">
+                    <div class="capacity-title">Total Loss Rate (2026)</div>
+                    <div>
+                        <span class="capacity-value" id="total-loss-rate" style="color: #4169e1;">0</span>
+                        <span class="capacity-unit">%</span>
+                    </div>
+                    <div class="stat-detail" id="total-loss-detail">Loss: 0 kt</div>
                 </div>
                 
                 <div class="stat-item" onclick="toggleSubItems('current')">
@@ -528,6 +537,8 @@
                 totalCompanies: 0,
                 totalCapacity: 0,
                 totalLoss: 0,
+                currentLoss: 0,
+                futureLoss: 0,
                 currentMaintCount: 0,
                 futureMaintCount: 0,
                 regions: {
@@ -597,6 +608,14 @@
                             const totalDays = months.reduce((sum, m) => sum + monthDays[m], 0);
                             const loss = (cap / 365) * totalDays;
                             stats.totalLoss += loss;
+                            
+                            // Current vs Future 분리
+                            if (company.is_current_maintenance) {
+                                stats.currentLoss += loss;
+                            }
+                            if (company.has_future_maintenance) {
+                                stats.futureLoss += loss;
+                            }
                         }
                     }
                     
@@ -703,9 +722,17 @@
             // UI 업데이트
             document.getElementById('total-count').textContent = stats.totalCompanies;
             document.getElementById('total-capacity').textContent = stats.totalCapacity.toLocaleString();
-            const lossRate = (stats.totalLoss / stats.totalCapacity * 100).toFixed(2);
-            document.getElementById('loss-rate').textContent = lossRate;
-            document.getElementById('loss-detail').textContent = `Loss: ${Math.round(stats.totalLoss).toLocaleString()} kt`;
+            
+            // Current Loss Rate
+            const currentLossRate = (stats.currentLoss / stats.totalCapacity * 100).toFixed(2);
+            document.getElementById('current-loss-rate').textContent = currentLossRate;
+            document.getElementById('current-loss-detail').textContent = `Loss: ${Math.round(stats.currentLoss).toLocaleString()} kt`;
+            
+            // Total Loss Rate (2026)
+            const totalLossRate = (stats.totalLoss / stats.totalCapacity * 100).toFixed(2);
+            document.getElementById('total-loss-rate').textContent = totalLossRate;
+            document.getElementById('total-loss-detail').textContent = `Loss: ${Math.round(stats.totalLoss).toLocaleString()} kt`;
+            
             document.getElementById('current-maintenance-count').textContent = stats.currentMaintCount;
             document.getElementById('future-maintenance-count').textContent = stats.futureMaintCount;
             
