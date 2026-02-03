@@ -2191,10 +2191,10 @@
           "lat": 41.1523,
           "lng": 1.2434,
           "address": "Tarragona Petrochemical Complex",
-          "maintenance": "없음",
+          "maintenance": "1월, 2월, 3월",
           "marker_size": 24,
           "is_current_maintenance": false,
-          "has_future_maintenance": false
+          "has_future_maintenance": true
         }
       ]
     },
