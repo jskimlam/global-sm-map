@@ -104,32 +104,43 @@
             color: #667eea;
         }
         
-        /* 하위 국가 목록 */
-        .sub-countries {
+        /* 하위 목록 */
+        .sub-items {
             margin-left: 26px;
             margin-top: 5px;
             display: none;
         }
         
-        .sub-countries.active {
+        .sub-items.active {
             display: block;
         }
         
-        .sub-country-item {
+        .sub-item {
             padding: 8px 12px;
             margin-bottom: 5px;
             border-radius: 6px;
             background: #fff;
             border: 1px solid #e9ecef;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
         
-        .sub-country-item:hover {
+        .sub-item:hover {
             background: #f8f9fa;
             border-color: #667eea;
             transform: translateX(-3px);
+        }
+        
+        .sub-item-name {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        
+        .sub-item-detail {
+            font-size: 11px;
+            color: #666;
         }
         
         .expand-icon {
@@ -266,19 +277,29 @@
                     <span class="stat-label">Total Companies</span>
                     <span class="stat-number" id="total-count">0</span>
                 </div>
-                <div class="stat-item" onclick="showMaintenanceMarkers('current')">
-                    <span class="stat-label">⚫ Current Maintenance</span>
+                
+                <div class="stat-item" onclick="toggleSubItems('current')">
+                    <span class="stat-label">
+                        ⚫ Current Maintenance
+                        <span class="expand-icon" id="current-icon">▼</span>
+                    </span>
                     <span class="stat-number" id="current-maintenance-count">0</span>
                 </div>
-                <div class="stat-item" onclick="showMaintenanceMarkers('future')">
-                    <span class="stat-label">🔵 Future Maintenance</span>
+                <div class="sub-items" id="current-sub"></div>
+                
+                <div class="stat-item" onclick="toggleSubItems('future')">
+                    <span class="stat-label">
+                        🔵 Future Maintenance
+                        <span class="expand-icon" id="future-icon">▼</span>
+                    </span>
                     <span class="stat-number" id="future-maintenance-count">0</span>
                 </div>
+                <div class="sub-items" id="future-sub"></div>
             </div>
             
             <div class="stats-section">
                 <h3>🌍 Regions</h3>
-                <div class="stat-item" onclick="toggleSubCountries('asia')">
+                <div class="stat-item" onclick="toggleSubItems('asia')">
                     <span class="stat-label">
                         <span class="stat-color" style="background-color: #FF6B6B;"></span>
                         Asia
@@ -286,20 +307,20 @@
                     </span>
                     <span class="stat-number" id="asia-count">0</span>
                 </div>
-                <div class="sub-countries" id="asia-sub">
-                    <div class="sub-country-item" onclick="flyToCountry('china')">
+                <div class="sub-items" id="asia-sub">
+                    <div class="sub-item" onclick="flyToCountry('china')">
                         🇨🇳 China (<span id="china-count">0</span>)
                     </div>
-                    <div class="sub-country-item" onclick="flyToCountry('japan')">
+                    <div class="sub-item" onclick="flyToCountry('japan')">
                         🇯🇵 Japan (<span id="japan-count">0</span>)
                     </div>
-                    <div class="sub-country-item" onclick="flyToCountry('korea')">
+                    <div class="sub-item" onclick="flyToCountry('korea')">
                         🇰🇷 Korea (<span id="korea-count">0</span>)
                     </div>
-                    <div class="sub-country-item" onclick="flyToCountry('taiwan')">
+                    <div class="sub-item" onclick="flyToCountry('taiwan')">
                         🇹🇼 Taiwan (<span id="taiwan-count">0</span>)
                     </div>
-                    <div class="sub-country-item" onclick="flyToCountry('sea')">
+                    <div class="sub-item" onclick="flyToCountry('sea')">
                         🌏 SEA (<span id="sea-count">0</span>)
                     </div>
                 </div>
@@ -376,6 +397,8 @@
         let map;
         let allMarkers = [];
         let clusters = [];
+        let currentMaintenanceList = [];
+        let futureMaintenanceList = [];
         
         // 데이터 로드
         fetch('data.json')
@@ -451,9 +474,28 @@
                     else if (['SAUDI ARABIA', 'KUWAIT', 'IRAN'].includes(company.country)) meCnt++;
                     else if (company.country === 'RUSSIA') russiaCnt++;
                     
-                    // 정기보수 카운트
-                    if (company.is_current_maintenance) currentMaintenanceCount++;
-                    if (company.has_future_maintenance) futureMaintenanceCount++;
+                    // 정기보수 카운트 및 리스트
+                    if (company.is_current_maintenance) {
+                        currentMaintenanceCount++;
+                        currentMaintenanceList.push({
+                            company: company.company,
+                            location: cluster.location,
+                            lat: cluster.lat,
+                            lng: cluster.lng,
+                            capacity: company.capacity
+                        });
+                    }
+                    if (company.has_future_maintenance) {
+                        futureMaintenanceCount++;
+                        futureMaintenanceList.push({
+                            company: company.company,
+                            location: cluster.location,
+                            lat: cluster.lat,
+                            lng: cluster.lng,
+                            capacity: company.capacity,
+                            maintenance: company.maintenance
+                        });
+                    }
                 });
                 
                 let color = getRegionColor(cluster.country);
@@ -579,6 +621,32 @@
             document.getElementById('taiwan-count').textContent = taiwanCnt;
             document.getElementById('sea-count').textContent = seaCnt;
             
+            // Current Maintenance 리스트 생성
+            const currentSubDiv = document.getElementById('current-sub');
+            currentMaintenanceList.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'sub-item';
+                div.onclick = () => flyToCompany(item.lat, item.lng);
+                div.innerHTML = `
+                    <div class="sub-item-name">⚫ ${item.company.substring(0, 30)}...</div>
+                    <div class="sub-item-detail">${item.location} | ${item.capacity} kt</div>
+                `;
+                currentSubDiv.appendChild(div);
+            });
+            
+            // Future Maintenance 리스트 생성
+            const futureSubDiv = document.getElementById('future-sub');
+            futureMaintenanceList.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'sub-item';
+                div.onclick = () => flyToCompany(item.lat, item.lng);
+                div.innerHTML = `
+                    <div class="sub-item-name">🔵 ${item.company.substring(0, 30)}...</div>
+                    <div class="sub-item-detail">${item.location} | ${item.maintenance}</div>
+                `;
+                futureSubDiv.appendChild(div);
+            });
+            
             // 모든 마커가 보이도록 Fit Bounds
             const bounds = L.latLngBounds(clusters.map(c => [c.lat, c.lng]));
             map.fitBounds(bounds, { padding: [50, 50] });
@@ -586,15 +654,16 @@
             console.log(`Total: ${totalCompanies} companies, ${clusters.length} markers`);
         }
         
-        // 아시아 하위 국가 토글
-        function toggleSubCountries(region) {
-            if (region === 'asia') {
-                const subDiv = document.getElementById('asia-sub');
-                const icon = document.getElementById('asia-icon');
+        // 하위 항목 토글
+        function toggleSubItems(type) {
+            const subDiv = document.getElementById(type + '-sub');
+            const icon = document.getElementById(type + '-icon');
+            
+            if (subDiv && icon) {
                 subDiv.classList.toggle('active');
                 icon.classList.toggle('expanded');
-            } else {
-                flyToRegion(region);
+            } else if (type !== 'current' && type !== 'future') {
+                flyToRegion(type);
             }
         }
         
@@ -614,7 +683,7 @@
             }
         }
         
-        // 국가별 이동 (아시아 세부)
+        // 국가별 이동
         function flyToCountry(country) {
             const countryCenters = {
                 'china': { lat: 35, lng: 115, zoom: 5 },
@@ -630,7 +699,22 @@
             }
         }
         
-        // 정기보수 마커 찾아가기
+        // 특정 업체로 이동
+        function flyToCompany(lat, lng) {
+            map.flyTo([lat, lng], 7, { duration: 1.5 });
+            
+            // 해당 위치의 마커 찾아서 팝업 열기
+            setTimeout(() => {
+                allMarkers.forEach(marker => {
+                    const markerPos = marker.getLatLng();
+                    if (Math.abs(markerPos.lat - lat) < 0.01 && Math.abs(markerPos.lng - lng) < 0.01) {
+                        marker.openPopup();
+                    }
+                });
+            }, 1600);
+        }
+        
+        // 정기보수 마커 전체 보기
         function showMaintenanceMarkers(type) {
             let targetMarkers = [];
             
@@ -643,11 +727,6 @@
             if (targetMarkers.length > 0) {
                 const bounds = L.latLngBounds(targetMarkers.map(m => m.getLatLng()));
                 map.fitBounds(bounds, { padding: [50, 50], maxZoom: 6 });
-                
-                // 첫 번째 마커 팝업 열기
-                setTimeout(() => {
-                    targetMarkers[0].openPopup();
-                }, 1000);
             }
         }
     </script>
