@@ -3,100 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Petrochemical Market Map (2026)</title>
+    <title>Global Petrochemical Archive Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        /* 기본 레이아웃 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; overflow: hidden; }
-        .container { display: flex; height: 100vh; position: relative; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; overflow: hidden; }
+        
+        .container { display: flex; height: 100vh; width: 100vw; overflow: hidden; position: relative; }
         
         /* 지도 섹션 */
-        .map-section { flex: 1; position: relative; display: flex; flex-direction: column; transition: all 0.3s ease; }
-        #map { flex: 1; width: 100%; z-index: 1; }
+        .map-section { flex: 1; position: relative; height: 100%; transition: all 0.4s ease; }
+        #map { width: 100%; height: 100%; z-index: 1; }
         
-        /* 사이드바 스타일 */
+        /* 사이드바(일람표) - 오른쪽 배치 및 슬라이드 설정 */
         .sidebar { 
-            width: 400px; background: white; overflow-y: auto; 
-            box-shadow: -3px 0 15px rgba(0,0,0,0.1); 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1000;
+            width: 400px; height: 100%; background: white; 
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000; position: relative; overflow-y: auto;
         }
-        .sidebar.collapsed { width: 0 !important; min-width: 0 !important; opacity: 0; pointer-events: none; }
+        
+        /* 닫혔을 때 오른쪽으로 완전히 밀어냄 */
+        .container.collapsed .sidebar { transform: translateX(400px); width: 0; }
 
-        /* 토글 버튼 */
+        /* 슬라이드 토글 버튼 - 사이드바 왼쪽에 붙어있음 */
         #toggle-btn {
-            position: absolute; right: 400px; top: 50%; transform: translateY(-50%);
-            width: 24px; height: 60px; background: #4b6cb7; color: white;
+            position: absolute; left: -25px; top: 50%; transform: translateY(-50%);
+            width: 25px; height: 60px; background: #4b6cb7; color: white;
             border: none; border-radius: 10px 0 0 10px; cursor: pointer;
-            z-index: 1100; font-size: 14px; transition: all 0.3s ease;
-            box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+            z-index: 1100; font-size: 14px; display: flex; align-items: center; justify-content: center;
         }
-        .container.sidebar-hidden #toggle-btn { right: 0; border-radius: 0 10px 10px 0; }
 
-        /* 헤더/선택기 스타일 */
+        /* 헤더 스타일 */
         #header { background: linear-gradient(135deg, #182848 0%, #4b6cb7 100%); color: white; padding: 20px; }
         .archive-select { 
             width: 100%; padding: 10px; border-radius: 6px; border: none; 
-            background: rgba(255,255,255,0.15); color: white; font-weight: bold; margin-top: 10px;
+            background: rgba(255,255,255,0.2); color: white; font-weight: bold; margin-top: 10px; cursor: pointer;
         }
-        
-        /* 통계 카드 */
-        .stats-section { padding: 20px; border-bottom: 1px solid #eee; }
-        .month-selector { width: 100%; padding: 10px; border: 2px solid #4b6cb7; border-radius: 6px; font-weight: bold; margin-bottom: 15px; }
-        
-        .capacity-box { padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid transparent; }
-        .capacity-title { font-size: 11px; text-transform: uppercase; font-weight: 700; opacity: 0.8; }
-        .capacity-value { font-size: 24px; font-weight: 800; display: block; margin: 4px 0; }
-        .stat-detail { font-size: 12px; }
 
-        /* 리스트 스타일 */
-        .maint-item { 
-            padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; 
-            cursor: pointer; transition: 0.2s; 
+        /* 통계 및 필터 섹션 */
+        .stats-section { padding: 20px; border-bottom: 1px solid #eee; }
+        .stats-section h3 { font-size: 12px; color: #4b6cb7; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .month-selector { width: 100%; padding: 10px; border: 2px solid #4b6cb7; border-radius: 6px; font-weight: bold; margin-bottom: 15px; }
+
+        .capacity-box { padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #4b6cb7; background: #f8fbff; }
+        .capacity-title { font-size: 11px; font-weight: 700; color: #4b6cb7; }
+        .capacity-value { font-size: 22px; font-weight: 800; display: block; margin: 3px 0; }
+
+        /* 기존 국가/지역 버튼 스타일 */
+        .filter-group { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+        .filter-btn { 
+            padding: 5px 10px; font-size: 11px; background: #eee; border: none; 
+            border-radius: 4px; cursor: pointer; transition: 0.2s; 
         }
-        .maint-item:hover { background: #f8fbff; border-color: #4b6cb7; transform: translateX(-3px); }
-        .maint-item.current { border-left: 4px solid #000; background: #f8f8f8; }
-        .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 5px; }
+        .filter-btn:hover { background: #4b6cb7; color: white; }
+
+        /* 업체 리스트 */
+        .maint-item { padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+        .maint-item:hover { border-color: #4b6cb7; background: #f0f5ff; }
+        .active-badge { background: #000; color: #fff; font-size: 9px; padding: 2px 5px; border-radius: 3px; margin-left: 5px; }
     </style>
 </head>
 <body>
     <div class="container" id="main-container">
         <div class="map-section">
-            <div id="header">
-                <h1 id="title">Global Petrochemical Status</h1>
-                <select class="archive-select" onchange="switchArchive(this.value)">
-                    <option value="data.json">Styrene Monomer (SM)</option>
-                    <option value="data_bd.json">Butadiene (BD) - 준비중</option>
-                    <option value="data_bz.json">Benzene (BZ) - 준비중</option>
-                </select>
-            </div>
             <div id="map"></div>
-            <button id="toggle-btn" onclick="toggleSidebar()">◀</button>
         </div>
         
         <div class="sidebar" id="sidebar">
+            <button id="toggle-btn" onclick="toggleSidebar()">▶</button>
+
+            <div id="header">
+                <h1>Petrochemical Archive</h1>
+                <select class="archive-select" onchange="switchArchive(this.value)">
+                    <option value="data.json">Styrene Monomer (SM)</option>
+                    <option value="data_an.json">AN (Acrylonitrile) - 준비중</option>
+                    <option value="data_bd.json">Butadiene (BD) - 준비중</option>
+                </select>
+            </div>
+
             <div class="stats-section">
-                <h3>📅 Market Analysis</h3>
+                <h3>📅 Performance Forecast</h3>
                 <select id="month-select" class="month-selector" onchange="updateDashboard()">
                     </select>
 
-                <div class="capacity-box" style="background: #fff0f0; color: #d63031; border-color: #d63031;">
-                    <div class="capacity-title"><span id="month-label">2월</span> Forecasted Loss</div>
-                    <span class="capacity-value" id="monthly-rate">0.00%</span>
-                    <div class="stat-detail" id="monthly-loss-kt">0 kt</div>
-                </div>
-
-                <div class="capacity-box" style="background: #f0f5ff; color: #4b6cb7; border-color: #4b6cb7;">
-                    <div class="capacity-title">2026 Yearly Cumulative</div>
-                    <span class="capacity-value" id="yearly-rate">0.00%</span>
-                    <div class="stat-detail" id="yearly-loss-kt">0 kt</div>
+                <div class="capacity-box" style="border-color: #ff6b6b;">
+                    <div class="capacity-title"><span id="month-label">2월</span> Loss Rate</div>
+                    <span class="capacity-value" id="monthly-rate" style="color: #ff6b6b;">0.00%</span>
+                    <div style="font-size: 12px;" id="monthly-loss-kt">0 kt</div>
                 </div>
             </div>
 
             <div class="stats-section">
-                <h3>🔍 Maintenance List (<span id="list-month-label">2월</span>)</h3>
+                <h3>🌍 Quick Navigation</h3>
+                <div class="filter-group">
+                    <button class="filter-btn" onclick="flyToCountry('korea')">🇰🇷 Korea</button>
+                    <button class="filter-btn" onclick="flyToCountry('china')">🇨🇳 China</button>
+                    <button class="filter-btn" onclick="flyToCountry('japan')">🇯🇵 Japan</button>
+                    <button class="filter-btn" onclick="flyToRegion('europe')">🇪🇺 Europe</button>
+                    <button class="filter-btn" onclick="flyToRegion('americas')">🇺🇸 Americas</button>
+                    <button class="filter-btn" onclick="resetView()">🌐 Reset</button>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3>📍 Maintenance Details</h3>
+                <div class="filter-group" style="margin-bottom: 15px;">
+                    <button class="filter-btn" style="background: #000; color: #fff;" onclick="filterMarkers('current')">Current Only</button>
+                    <button class="filter-btn" style="background: #e67e22; color: #fff;" onclick="filterMarkers('future')">Future Only</button>
+                </div>
                 <div id="maint-list"></div>
             </div>
         </div>
@@ -104,18 +121,18 @@
 
     <script>
         let map, clusters = [], allMarkers = [];
-        const today = new Date('2026-02-04'); // 기준일: 2026년 2월 4일
+        const today = new Date('2026-02-04');
         const monthDays = { 1:31, 2:28, 3:31, 4:30, 5:31, 6:30, 7:31, 8:31, 9:30, 10:31, 11:30, 12:31 };
 
         function initApp() {
             const select = document.getElementById('month-select');
             for(let i=1; i<=12; i++) {
                 const opt = document.createElement('option');
-                opt.value = i; opt.innerText = `2026년 ${i}월 Performance`;
+                opt.value = i; opt.innerText = `2026년 ${i}월`;
                 if(i === 2) opt.selected = true;
                 select.appendChild(opt);
             }
-            map = L.map('map').setView([25, 120], 3);
+            map = L.map('map').setView([30, 120], 3);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             loadData('data.json');
         }
@@ -125,37 +142,51 @@
                 const res = await fetch(file);
                 const data = await res.json();
                 clusters = data.clusters;
-                refreshMap();
+                renderMap();
                 updateDashboard();
-            } catch(e) { console.error("데이터 로드 실패"); }
+            } catch(e) { console.error("Data Load Error"); }
         }
 
-        function refreshMap() {
+        function renderMap(filterType = 'all') {
             allMarkers.forEach(m => map.removeLayer(m));
             allMarkers = [];
-            
+
             clusters.forEach(c => {
-                let isNowOff = false;
-                let willBeOff = false;
+                let isCurrent = false, isFuture = false;
+                let clusterCap = 0;
 
                 c.companies.forEach(comp => {
-                    if (comp.maint_start && comp.maint_end) {
+                    const cap = parseFloat(comp.capacity) || 0;
+                    clusterCap += cap;
+                    if (comp.maint_start) {
                         const start = new Date(comp.maint_start);
                         const end = new Date(comp.maint_end);
-                        if (today >= start && today <= end) isNowOff = true;
-                        else if (start > today) willBeOff = true;
-                    } else if (comp.is_current_maintenance) isNowOff = true;
+                        if (today >= start && today <= end) isCurrent = true;
+                        else if (start > today) isFuture = true;
+                    } else if (comp.is_current_maintenance) isCurrent = true;
                 });
 
-                const color = isNowOff ? "#000000" : (willBeOff ? "#e67e22" : "#4b6cb7");
+                if (filterType === 'current' && !isCurrent) return;
+                if (filterType === 'future' && !isFuture) return;
+
+                // 케파(Capacity)에 따른 마커 크기 기존 형식 유지
+                let radius = 7;
+                if (clusterCap < 100) radius = 5;
+                else if (clusterCap < 300) radius = 8;
+                else if (clusterCap < 500) radius = 12;
+                else if (clusterCap < 700) radius = 16;
+                else radius = 22;
+
+                const color = isCurrent ? "#000000" : (isFuture ? "#e67e22" : "#4b6cb7");
+                
                 const marker = L.circleMarker([c.lat, c.lng], {
-                    radius: 8, fillColor: color, color: "white", weight: 2, fillOpacity: 0.8
+                    radius: radius, fillColor: color, color: "white", weight: 2, fillOpacity: 0.7
                 }).addTo(map);
 
-                let popup = `<b>${c.location}, ${c.country}</b><br>`;
+                let popup = `<b>${c.location}, ${c.country}</b><br><small>Total Cap: ${clusterCap} kt/y</small>`;
                 c.companies.forEach(comp => {
-                    const status = (comp.maint_start) ? `${comp.maint_start} ~ ${comp.maint_end}` : comp.maintenance;
-                    popup += `<hr style='margin:5px 0'>${comp.company}<br><small>Cap: ${comp.capacity}kt | Maint: ${status}</small>`;
+                    const mInfo = comp.maint_start ? `${comp.maint_start} ~ ${comp.maint_end}` : comp.maintenance;
+                    popup += `<hr style='margin:5px 0'>${comp.company}<br>Cap: ${comp.capacity}kt | Maint: ${mInfo}`;
                 });
                 marker.bindPopup(popup);
                 allMarkers.push(marker);
@@ -165,9 +196,8 @@
         function updateDashboard() {
             const selMonth = parseInt(document.getElementById('month-select').value);
             document.getElementById('month-label').innerText = selMonth + '월';
-            document.getElementById('list-month-label').innerText = selMonth + '월';
-
-            let totalCap = 0, mLossTotal = 0, yLossTotal = 0;
+            
+            let totalCap = 0, mLossTotal = 0;
             const listDiv = document.getElementById('maint-list');
             listDiv.innerHTML = '';
 
@@ -179,28 +209,12 @@
                     const cap = parseFloat(comp.capacity) || 0;
                     totalCap += cap;
 
-                    // 정밀 날짜 기반 계산
-                    if (comp.maint_start && comp.maint_end) {
+                    if (comp.maint_start) {
                         const start = new Date(comp.maint_start);
                         const end = new Date(comp.maint_end);
-
-                        // 1. 연간 손실 (2026년 내 중단 일수 계산)
-                        const yearStart = new Date(2026, 0, 1);
-                        const yearEnd = new Date(2026, 11, 31);
-                        const overlapYear = Math.max(0, Math.min(end, yearEnd) - Math.max(start, yearStart)) / (1000*60*60*24) + 1;
-                        if(overlapYear > 0) yLossTotal += (cap / 365) * overlapYear;
-
-                        // 2. 선택 월 손실
-                        const overlapMonth = Math.max(0, Math.min(end, mEnd) - Math.max(start, mStart)) / (1000*60*60*24) + 1;
-                        if(overlapMonth > 0) {
-                            const loss = (cap / 365) * overlapMonth;
-                            mLossTotal += loss;
-                            addToList(comp, c, loss, listDiv);
-                        }
-                    } else {
-                        // 기존 텍스트 기반 호환성 유지
-                        if(comp.maintenance.includes(selMonth + '월')) {
-                            const loss = (cap / 365) * monthDays[selMonth];
+                        const overlap = Math.max(0, Math.min(end, mEnd) - Math.max(start, mStart)) / (1000*60*60*24) + 1;
+                        if (overlap > 0) {
+                            const loss = (cap / 365) * overlap;
                             mLossTotal += loss;
                             addToList(comp, c, loss, listDiv);
                         }
@@ -208,36 +222,45 @@
                 });
             });
 
-            document.getElementById('monthly-rate').innerText = (mLossTotal / (totalCap/12) * 100).toFixed(2) + '%';
-            document.getElementById('monthly-loss-kt').innerText = `${Math.round(mLossTotal).toLocaleString()} kt`;
-            document.getElementById('yearly-rate').innerText = (yLossTotal / totalCap * 100).toFixed(2) + '%';
-            document.getElementById('yearly-loss-kt').innerText = `${Math.round(yLossTotal).toLocaleString()} kt`;
+            document.getElementById('monthly-rate').innerText = (mLossTotal / (totalCap / 12) * 100).toFixed(2) + '%';
+            document.getElementById('monthly-loss-kt').innerText = `Loss: ${Math.round(mLossTotal).toLocaleString()} kt`;
         }
 
         function addToList(comp, cluster, loss, container) {
             const item = document.createElement('div');
-            const isCurrent = (comp.maint_start && today >= new Date(comp.maint_start) && today <= new Date(comp.maint_end));
-            item.className = `maint-item ${isCurrent ? 'current' : ''}`;
-            item.onclick = () => map.flyTo([cluster.lat, cluster.lng], 8);
+            item.className = 'maint-item';
+            const isNow = (new Date(comp.maint_start) <= today && new Date(comp.maint_end) >= today);
             item.innerHTML = `
-                <div style="font-weight:bold">${comp.company} ${isCurrent ? '<span class="badge" style="background:#000;color:#fff">ACTIVE</span>' : ''}</div>
+                <div style="font-weight:bold">${comp.company} ${isNow ? '<span class="active-badge">ACTIVE</span>' : ''}</div>
                 <div style="font-size:11px; color:#666;">${cluster.location} | Loss: ${Math.round(loss)}kt</div>
-                <div style="font-size:10px; color:#4b6cb7;">${comp.maint_start || ''} ~ ${comp.maint_end || ''}</div>
+                <div style="font-size:10px; color:#4b6cb7;">${comp.maint_start} ~ ${comp.maint_end}</div>
             `;
+            item.onclick = () => map.flyTo([cluster.lat, cluster.lng], 8);
             container.appendChild(item);
         }
 
+        /* 내비게이션 기능 */
+        function flyToCountry(c) {
+            const locs = { 'korea': [36.5, 127], 'china': [35, 110], 'japan': [36, 138] };
+            map.flyTo(locs[c], 6);
+        }
+        function flyToRegion(r) {
+            const locs = { 'europe': [50, 10], 'americas': [40, -100] };
+            map.flyTo(locs[r], 4);
+        }
+        function resetView() { map.setView([30, 120], 3); renderMap('all'); }
+        function filterMarkers(type) { renderMap(type); }
+
+        /* 사이드바 토글 - 수정됨 */
         function toggleSidebar() {
-            const sb = document.getElementById('sidebar');
-            const cont = document.getElementById('main-container');
+            const container = document.getElementById('main-container');
             const btn = document.getElementById('toggle-btn');
-            sb.classList.toggle('collapsed');
-            cont.classList.toggle('sidebar-hidden');
-            btn.innerText = sb.classList.contains('collapsed') ? '▶' : '◀';
-            setTimeout(() => map.invalidateSize(), 350);
+            container.classList.toggle('collapsed');
+            btn.innerText = container.classList.contains('collapsed') ? '◀' : '▶';
+            setTimeout(() => map.invalidateSize(), 450);
         }
 
-        function switchArchive(file) { loadData(file); }
+        function switchArchive(val) { loadData(val); }
 
         window.onload = initApp;
     </script>
