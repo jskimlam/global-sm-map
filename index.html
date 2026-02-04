@@ -8,72 +8,64 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7f6; overflow: hidden; }
-        .container { display: flex; height: 100vh; width: 100vw; position: relative; overflow: hidden; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; overflow: hidden; }
+        .container { display: flex; height: 100vh; width: 100vw; position: relative; }
 
         /* 지도 영역 */
-        .map-section { flex: 1; height: 100%; position: relative; transition: all 0.4s ease; }
+        .map-section { flex: 1; height: 100%; position: relative; }
         #map { width: 100%; height: 100%; z-index: 1; }
 
-        /* 사이드바 (오른쪽 배치) */
+        /* 사이드바 (최초 디자인 복구) */
         .sidebar { 
-            width: 400px; height: 100%; background: white; 
-            box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 380px; height: 100%; background: white; 
+            box-shadow: -3px 0 15px rgba(0,0,0,0.1); 
+            transition: transform 0.4s ease;
             z-index: 1000; position: relative; overflow-y: auto;
         }
-        .container.collapsed .sidebar { transform: translateX(400px); width: 0; }
+        .container.sidebar-hidden .sidebar { transform: translateX(380px); width: 0; }
 
-        /* 슬라이드 핸들 버튼 (사이드바 왼쪽에 확실히 부착) */
+        /* 슬라이드 버튼 (지도 우측 상단 고정) */
         #toggle-btn {
-            position: absolute; left: -30px; top: 50%; transform: translateY(-50%);
-            width: 30px; height: 80px; background: #4b6cb7; color: white;
-            border: none; border-radius: 12px 0 0 12px; cursor: pointer;
-            z-index: 1100; font-size: 18px; display: flex; align-items: center; justify-content: center;
-            box-shadow: -3px 0 10px rgba(0,0,0,0.2);
+            position: absolute; right: 20px; top: 20px;
+            width: 50px; height: 50px; background: #4b6cb7; color: white;
+            border: none; border-radius: 12px; cursor: pointer;
+            z-index: 1100; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        /* 헤더 브랜딩 */
+        /* 헤더 및 Made by LAM */
         #header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 20px; }
-        #header h1 { font-size: 19px; font-weight: 600; margin-bottom: 2px; }
+        #header h1 { font-size: 20px; margin-bottom: 2px; }
         .made-by { font-size: 12px; font-weight: bold; color: #ffeb3b; margin-bottom: 12px; }
+        
         .archive-select {
             width: 100%; padding: 10px; border-radius: 6px; border: none;
             background: rgba(255,255,255,0.2); color: white; font-weight: bold; cursor: pointer;
         }
 
         /* 통계 섹션 */
-        .stats-section { padding: 15px 20px; border-bottom: 1px solid #eee; }
-        .stats-section h3 { font-size: 12px; color: #2a5298; margin-bottom: 12px; text-transform: uppercase; font-weight: 700; }
+        .stats-section { padding: 20px; border-bottom: 1px solid #eee; }
+        .stats-section h3 { font-size: 13px; color: #2a5298; margin-bottom: 12px; text-transform: uppercase; font-weight: 700; }
         
         .cap-card { padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #2a5298; background: #f8faff; }
-        .cap-val { font-size: 24px; font-weight: 800; color: #333; }
-        .cap-denom { font-size: 11px; color: #666; margin-top: 5px; border-top: 1px dashed #ccc; padding-top: 5px; }
+        .cap-val { font-size: 22px; font-weight: 800; color: #333; }
+        .cap-label { font-size: 11px; color: #666; margin-bottom: 5px; font-weight: bold; }
 
-        /* 지역 리스트 */
-        .reg-box { margin-bottom: 5px; border: 1px solid #eee; border-radius: 6px; }
-        .reg-head { padding: 8px 12px; background: #fcfcfc; display: flex; justify-content: space-between; cursor: pointer; font-size: 13px; font-weight: 600; }
-        .reg-body { background: #fff; display: none; }
-        .reg-box.open .reg-body { display: block; }
-        .cty-item { padding: 6px 25px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; border-top: 1px solid #f9f9f9; }
-        .cty-item:hover { background: #f0f4ff; color: #2a5298; }
+        /* 내비게이션 */
+        .nav-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .nav-btn { padding: 7px 12px; font-size: 11px; background: #f0f2f5; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; }
 
-        /* 최초의 물방울(Pin) 마커 스타일 */
-        .pin-marker { filter: drop-shadow(0 3px 4px rgba(0,0,0,0.4)); }
-        
-        .maint-list-item { padding: 10px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 5px; font-size: 11px; cursor: pointer; }
-        .maint-list-item:hover { border-color: #2a5298; background: #f4f7ff; }
+        /* 물방울(Pin) 마커 스타일 */
+        .pin-marker { filter: drop-shadow(0 3px 4px rgba(0,0,0,0.3)); }
     </style>
 </head>
 <body>
     <div class="container" id="main-container">
         <div class="map-section">
             <div id="map"></div>
+            <button id="toggle-btn" onclick="toggleSidebar()">☰</button>
         </div>
         
         <div class="sidebar" id="sidebar">
-            <button id="toggle-btn" onclick="toggleSidebar()">◀</button>
-
             <div id="header">
                 <h1>Global SM Companies Status</h1>
                 <div class="made-by">Made by LAM</div>
@@ -85,37 +77,41 @@
             </div>
 
             <div class="stats-section">
-                <h3>📊 Market Balance (2026)</h3>
-                <div class="cap-card" style="border-color: #4a90e2;">
-                    <div style="font-size:11px; font-weight:bold; color:#4a90e2;">Yearly Cumulative Loss</div>
-                    <span class="cap-val" id="yr-rate">0.00%</span>
-                    <div class="cap-denom" id="yr-denom">Loss: 0 / Total: 0 kt</div>
+                <h3>📊 Market Balance</h3>
+                <div class="cap-card">
+                    <div class="cap-label">Total Capacity</div>
+                    <span class="cap-val" id="total-cap">0</span> <small>kt/y</small>
                 </div>
-                <div class="cap-card" style="border-color: #e74c3c; background: #fff5f5;">
-                    <div style="font-size:11px; font-weight:bold; color:#e74c3c;">Current Loss (Feb)</div>
-                    <span class="cap-val" id="cur-rate" style="color:#e74c3c;">0.00%</span>
-                    <div class="cap-denom" id="cur-denom">Loss: 0 / Base: 0 kt</div>
+                <div class="cap-card" style="border-color: #ff6b6b; background: #fff5f5;">
+                    <div class="cap-label" style="color: #ff6b6b;">Current Loss Rate (Feb)</div>
+                    <span class="cap-val" id="loss-rate" style="color: #ff6b6b;">0.00%</span>
+                    <div style="font-size: 11px; color: #666; margin-top: 5px;" id="loss-kt">Loss: 0 kt</div>
                 </div>
             </div>
 
             <div class="stats-section">
-                <h3>🌍 Regional Weight</h3>
-                <div id="region-tree"></div>
+                <h3>🌍 Navigation</h3>
+                <div class="nav-group">
+                    <button class="nav-btn" onclick="flyTo('korea')">🇰🇷 Korea</button>
+                    <button class="nav-btn" onclick="flyTo('china')">🇨🇳 China</button>
+                    <button class="nav-btn" onclick="flyTo('japan')">🇯🇵 Japan</button>
+                    <button class="nav-btn" onclick="flyTo('taiwan')">🇹🇼 Taiwan</button>
+                    <button class="nav-btn" onclick="flyTo('europe')">🇪🇺 Europe</button>
+                    <button class="nav-btn" onclick="flyTo('usa')">🇺🇸 USA</button>
+                </div>
             </div>
 
             <div class="stats-section">
-                <h3>📍 Maintenance List (Feb)</h3>
-                <div id="maint-list"></div>
+                <h3>📍 Company List</h3>
+                <div id="maint-list" style="font-size: 12px; color: #666;"></div>
             </div>
         </div>
     </div>
 
     <script>
         let map, clusters = [], allMarkers = [];
-        const today = new Date('2026-02-04');
-        const febStart = new Date('2026-02-01'), febEnd = new Date('2026-02-28');
 
-        function init() {
+        function initApp() {
             map = L.map('map').setView([25, 115], 3);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             loadData('data.json');
@@ -126,106 +122,68 @@
                 const res = await fetch(file);
                 const data = await res.json();
                 clusters = data.clusters;
-                updateAll();
-            } catch(e) { console.error("Data Load Failed"); }
+                renderMap();
+            } catch(e) { console.error("데이터 로드 실패"); }
         }
 
-        function updateAll() {
+        function renderMap() {
             allMarkers.forEach(m => map.removeLayer(m));
             allMarkers = [];
-
-            let totalCap = 0, curLoss = 0, yrLoss = 0;
-            let regData = { 'Asia': { cap: 0, cty: {'CHINA (MAINLAND)':0, 'KOREA, SOUTH':0, 'JAPAN':0, 'TAIWAN':0, 'SEA':0} }, 'Americas':{cap:0}, 'Europe':{cap:0}, 'ME/Other':{cap:0} };
-
+            
+            let totalGlobalCap = 0, currentLoss = 0;
             const listDiv = document.getElementById('maint-list');
             listDiv.innerHTML = '';
 
             clusters.forEach(c => {
-                let clusterCap = 0, isCurrent = false, isFuture = false;
+                let clusterCap = 0, isMaint = false;
 
                 c.companies.forEach(comp => {
                     const cap = parseFloat(comp.capacity) || 0;
-                    totalCap += cap;
+                    totalGlobalCap += cap;
                     clusterCap += cap;
-
-                    // 지역 분류
-                    let r = ['USA','CANADA','BRAZIL'].includes(c.country) ? 'Americas' : ['BELGIUM','FRANCE','GERMANY','NETHERLANDS','SPAIN','ITALY'].includes(c.country) ? 'Europe' : ['SAUDI ARABIA','KUWAIT','IRAN','RUSSIA'].includes(c.country) ? 'ME/Other' : 'Asia';
-                    regData[r].cap += cap;
-                    if(r === 'Asia') {
-                        if(regData.Asia.cty[c.country] !== undefined) regData.Asia.cty[c.country] += cap;
-                        else regData.Asia.cty['SEA'] += cap;
-                    }
-
-                    // 날짜 로직
-                    if (comp.maint_start && comp.maint_end) {
-                        const s = new Date(comp.maint_start), e = new Date(comp.maint_end);
-                        const yrLap = Math.max(0, Math.min(e, new Date('2026-12-31')) - Math.max(s, new Date('2026-01-01'))) / 86400000 + 1;
-                        yrLoss += (cap / 365) * yrLap;
-
-                        const febLap = Math.max(0, Math.min(e, febEnd) - Math.max(s, febStart)) / 86400000 + 1;
-                        if(febLap > 0) {
-                            curLoss += (cap / 365) * febLap;
-                            isCurrent = (today >= s && today <= e);
-                            if(isCurrent) listDiv.innerHTML += `<div class="maint-list-item" onclick="map.flyTo([${c.lat},${c.lng}],8)"><b>${comp.company}</b><br>Loss: ${Math.round((cap/365)*febLap)}kt</div>`;
-                        }
-                        if(s > today) isFuture = true;
-                        if(today >= s && today <= e) isCurrent = true;
+                    // 2월 정기보수 체크 (기존 방식 복구)
+                    if (comp.maintenance && (comp.maintenance.includes('2월') || comp.is_current_maintenance)) {
+                        isMaint = true;
+                        currentLoss += (cap / 365) * 28;
+                        listDiv.innerHTML += `• ${comp.company} (${comp.capacity}kt)<br>`;
                     }
                 });
 
-                // 최초의 물방울(Pin) 디자인 복구
-                let size = clusterCap < 100 ? 20 : clusterCap < 400 ? 30 : clusterCap < 700 ? 40 : 55;
-                const color = isCurrent ? "#000000" : (isFuture ? "#e67e22" : "#2a5298");
+                // 최초의 물방울(Pin) 마커 디자인
+                let size = clusterCap < 100 ? 25 : clusterCap < 400 ? 35 : 45;
+                const color = isMaint ? "#000000" : "#2a5298";
                 
-                const icon = L.divIcon({
+                const pinIcon = L.divIcon({
                     className: 'pin-marker',
-                    html: isFuture ? 
-                        `<svg width="${size}" height="${size}" viewBox="0 0 100 100"><path d="M50 5 L90 85 L10 85 Z" fill="${color}" stroke="white" stroke-width="4"/></svg>` :
-                        `<svg width="${size}" height="${size}" viewBox="0 0 100 120"><path d="M50 0 C22 0 0 22 0 50 C0 85 50 120 50 120 C50 120 100 85 100 50 C100 22 78 0 50 0 Z" fill="${color}" stroke="white" stroke-width="5"/><circle cx="50" cy="50" r="15" fill="white" opacity="0.3"/></svg>`,
+                    html: `<svg width="${size}" height="${size}" viewBox="0 0 100 120"><path d="M50 0 C22 0 0 22 0 50 C0 85 50 120 50 120 C50 120 100 85 100 50 C100 22 78 0 50 0 Z" fill="${color}" stroke="white" stroke-width="5"/></svg>`,
                     iconSize: [size, size], iconAnchor: [size/2, size]
                 });
 
-                const m = L.marker([c.lat, c.lng], {icon}).addTo(map);
+                const m = L.marker([c.lat, c.lng], {icon: pinIcon}).addTo(map);
                 m.bindPopup(`<b>${c.location}</b><br>Capacity: ${clusterCap}kt`);
                 allMarkers.push(m);
             });
 
-            // 수치 업데이트
-            document.getElementById('yr-rate').innerText = (yrLoss / totalCap * 100).toFixed(2) + "%";
-            document.getElementById('yr-denom').innerText = `Loss: ${Math.round(yrLoss).toLocaleString()} / Total: ${Math.round(totalCap).toLocaleString()} kt`;
-            document.getElementById('cur-rate').innerText = (curLoss / (totalCap/12) * 100).toFixed(2) + "%";
-            document.getElementById('cur-denom').innerText = `Loss: ${Math.round(curLoss).toLocaleString()} / Base: ${Math.round(totalCap/12).toLocaleString()} kt`;
-
-            // 지역 트리 생성
-            const tree = document.getElementById('region-tree');
-            tree.innerHTML = '';
-            Object.keys(regData).forEach(r => {
-                const p = (regData[r].cap / totalCap * 100).toFixed(1);
-                let h = `<div class="reg-box"><div class="reg-head" onclick="this.parentElement.classList.toggle('open'); flyTo('${r.toLowerCase()}')"><span>${r}</span><span>${p}%</span></div><div class="reg-body">`;
-                if(r === 'Asia') {
-                    Object.keys(regData.Asia.cty).forEach(ct => {
-                        const cp = (regData.Asia.cty[ct] / totalCap * 100).toFixed(1);
-                        h += `<div class="cty-item" onclick="flyTo('${ct.toLowerCase().replace(' (mainland)','').replace(', south','')}')"><span>${ct}</span><span>${cp}%</span></div>`;
-                    });
-                }
-                h += `</div></div>`;
-                tree.innerHTML += h;
-            });
+            // 통계 업데이트
+            document.getElementById('total-cap').innerText = Math.round(totalGlobalCap).toLocaleString();
+            document.getElementById('loss-rate').innerText = (currentLoss / (totalGlobalCap/12) * 100).toFixed(2) + "%";
+            document.getElementById('loss-kt').innerText = `Loss: ${Math.round(currentLoss).toLocaleString()} kt`;
         }
 
         function toggleSidebar() {
-            const c = document.getElementById('main-container');
-            c.classList.toggle('collapsed');
-            document.getElementById('toggle-btn').innerText = c.classList.contains('collapsed') ? '◀' : '▶';
+            const container = document.getElementById('main-container');
+            container.classList.toggle('sidebar-hidden');
             setTimeout(() => map.invalidateSize(), 400);
         }
 
-        function flyTo(l) {
-            const t = { 'asia':[[20, 110],4], 'korea':[[36.5, 127],7], 'china':[[35, 110],5], 'japan':[[36, 138],6], 'taiwan':[[23.5, 121],7], 'americas':[[38,-98],4], 'europe':[[50, 10],4] };
-            if(t[l]) map.flyTo(t[l][0], t[l][1]);
+        function flyTo(loc) {
+            const targets = { 'korea':[[36.5, 127], 7], 'china':[[35, 110], 5], 'japan':[[36, 138], 6], 'taiwan':[[23.5, 121], 7], 'europe':[[50, 10], 4], 'usa':[[38, -98], 4] };
+            map.flyTo(targets[loc][0], targets[loc][1]);
         }
-        function switchProduct(v) { loadData(v); }
-        window.onload = init;
+
+        function switchProduct(val) { loadData(val); }
+
+        window.onload = initApp;
     </script>
 </body>
 </html>
