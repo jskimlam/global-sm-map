@@ -1,337 +1,249 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Global SM Companies Status</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; overflow: hidden; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global SM Companies Status</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; overflow: hidden; }
+        
+        .container { display: flex; height: 100vh; position: relative; }
+        .map-section { flex: 1; display: flex; flex-direction: column; transition: all 0.3s ease; }
+        #map { flex: 1; width: 100%; }
 
-.container { display: flex; height: 100vh; position: relative; }
-.map-section { flex: 1; display: flex; flex-direction: column; transition: all 0.3s ease; }
+        /* 사이드바 슬라이드 스타일 */
+        .sidebar { 
+            width: 380px; background: white; overflow-y: auto; 
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1); transition: all 0.3s ease;
+            position: relative; z-index: 1000;
+        }
+        .sidebar.collapsed { margin-right: -380px; }
 
-/* 사이드바 스타일 및 슬라이드 효과 */
-.sidebar { 
-    width: 380px; 
-    background: white; 
-    overflow-y: auto; 
-    box-shadow: -2px 0 10px rgba(0,0,0,0.1); 
-    transition: all 0.3s ease;
-    position: relative;
-    z-index: 1000;
-}
-.sidebar.collapsed { margin-right: -380px; }
+        /* 슬라이드 토글 버튼 (왼쪽 끝 중앙) */
+        #toggle-btn {
+            position: absolute; left: -25px; top: 50%; transform: translateY(-50%);
+            width: 25px; height: 60px; background: white; border: 1px solid #ddd;
+            border-right: none; border-radius: 8px 0 0 8px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 1001;
+            color: #667eea; font-weight: bold;
+        }
 
-/* 슬라이드 버튼 (사이드바 왼쪽 중앙) */
-#toggle-btn {
-    position: absolute;
-    left: -25px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 25px;
-    height: 50px;
-    background: white;
-    border: 1px solid #ddd;
-    border-right: none;
-    border-radius: 8px 0 0 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: -2px 0 5px rgba(0,0,0,0.1);
-    z-index: 1001;
-}
+        #header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; }
+        #header h1 { font-size: 18px; font-weight: 600; }
+        #header .subtitle { font-size: 11px; opacity: 0.8; margin-top: 4px; }
 
-#header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; }
-#header h1 { font-size: 20px; font-weight: 600; margin: 0 0 5px 0; }
-#header .subtitle { font-size: 12px; opacity: 0.9; }
-#map { flex: 1; width: 100%; }
+        /* 아코디언(접이식) 섹션 스타일 */
+        .collapsible-header {
+            padding: 15px 20px; background: #fff; border-bottom: 1px solid #eee;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer;
+        }
+        .collapsible-header h3 { font-size: 13px; color: #667eea; text-transform: uppercase; letter-spacing: 1px; }
+        .collapsible-content { padding: 15px 20px; border-bottom: 1px solid #eee; }
+        .collapsible-content.hidden { display: none; }
+        .arrow { font-size: 10px; color: #ccc; transition: transform 0.3s; }
+        .arrow.rotated { transform: rotate(180deg); }
 
-/* 다중 원료 아카이브 스타일 */
-.archive-section { padding: 15px 20px; border-bottom: 1px solid #eee; background: #fcfcfc; }
-.archive-label { font-size: 11px; color: #764ba2; font-weight: bold; margin-bottom: 8px; display: block; text-transform: uppercase; }
-.material-selector { 
-    width: 100%; 
-    padding: 10px; 
-    border-radius: 6px; 
-    border: 1px solid #e0e0e0; 
-    font-size: 13px; 
-    outline: none; 
-    background-color: white;
-    cursor: pointer;
-}
+        /* 내부 통계 아이템 */
+        .stat-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin-bottom: 6px; border-radius: 8px; background: #f8f9fa; cursor: pointer; }
+        .stat-item:hover { background: #e9ecef; }
+        .stat-label { font-size: 13px; color: #333; display: flex; align-items: center; gap: 8px; }
+        .stat-number { font-size: 18px; font-weight: bold; color: #667eea; }
+        
+        .capacity-box { background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); padding: 12px; border-radius: 8px; margin-bottom: 8px; }
+        .sub-items { margin-left: 20px; margin-top: 5px; display: none; }
+        .sub-items.active { display: block; }
+        .sub-item { padding: 6px 10px; background: #fff; border: 1px solid #eee; border-radius: 6px; font-size: 11px; margin-bottom: 4px; cursor: pointer; }
 
-/* 기존 스타일 유지 */
-.stats-section { padding: 20px; border-bottom: 1px solid #eee; }
-.stats-section h3 { font-size: 13px; color: #667eea; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-.stat-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin-bottom: 6px; border-radius: 8px; background: #f8f9fa; cursor: pointer; transition: all 0.3s ease; }
-.stat-item:hover { background: #e9ecef; transform: translateX(-5px); }
-.stat-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #333; }
-.stat-color { width: 14px; height: 14px; border-radius: 50%; }
-.stat-number { font-size: 18px; font-weight: bold; color: #667eea; }
-.stat-detail { font-size: 11px; color: #666; margin-top: 2px; }
-.sub-items { margin-left: 22px; margin-top: 5px; display: none; }
-.sub-items.active { display: block; }
-.sub-item { padding: 7px 10px; margin-bottom: 4px; border-radius: 6px; background: #fff; border: 1px solid #e9ecef; font-size: 11px; cursor: pointer; transition: all 0.2s ease; }
-.sub-item:hover { background: #f8f9fa; border-color: #667eea; transform: translateX(-3px); }
-.sub-item-name { font-weight: 500; color: #333; margin-bottom: 2px; }
-.sub-item-detail { font-size: 10px; color: #666; }
-.expand-icon { margin-left: 5px; font-size: 9px; transition: transform 0.3s ease; }
-.expand-icon.expanded { transform: rotate(180deg); }
-.capacity-box { background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); padding: 12px; border-radius: 8px; margin-bottom: 8px; }
-.capacity-title { font-size: 11px; color: #667eea; font-weight: 600; margin-bottom: 5px; }
-.capacity-value { font-size: 20px; font-weight: bold; color: #333; }
-.capacity-unit { font-size: 12px; color: #666; margin-left: 5px; }
-.legend-section { padding: 20px; }
-.legend-section h3 { font-size: 13px; color: #667eea; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-.legend-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
-.legend-item:hover { background: #f8f9fa; }
-.legend-marker { width: 18px; height: 18px; border-radius: 50%; margin-right: 8px; }
-.size-legend { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; }
-.size-item { display: flex; align-items: center; margin-bottom: 6px; font-size: 11px; }
-.size-circle { border-radius: 50%; background: #667eea; margin-right: 8px; }
-.custom-marker { background: transparent; border: none; }
-.custom-marker svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); transition: all 0.3s ease; }
-.custom-marker:hover svg { transform: scale(1.3); }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-.pulse-marker { animation: pulse 2s ease-in-out infinite; }
-.leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
-.leaflet-popup-content { margin: 15px; font-size: 13px; line-height: 1.6; }
-.company-name { font-weight: bold; color: #667eea; font-size: 14px; margin-bottom: 8px; }
-.label-marker { background: rgba(102, 126, 234, 0.9); color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3); border: none; }
-</style>
+        /* 마커 스타일 */
+        .custom-marker svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .pulse-marker { animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .label-marker { background: rgba(102, 126, 234, 0.9); color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; }
+    </style>
 </head>
 <body>
+
 <div class="container">
     <div class="map-section">
         <div id="header">
             <h1>Global SM Companies Status</h1>
-            <div class="subtitle">Made by LAM</div>
+            <div class="subtitle">Interactive Market Dashboard</div>
         </div>
         <div id="map"></div>
     </div>
 
     <div class="sidebar" id="sidebar">
-        <div id="toggle-btn" onclick="toggleSidebar()">
-            <span id="toggle-icon">▶</span>
-        </div>
+        <div id="toggle-btn" onclick="toggleSidebar()"><span id="toggle-icon">▶</span></div>
 
-        <div class="archive-section">
-            <label class="archive-label">Select Material Archive</label>
-            <select class="material-selector" onchange="changeMaterial(this.value)">
-                <option value="SM">Styrene Monomer (SM)</option>
-                <option value="AN">Acrylonitrile (AN)</option>
-                <option value="BD">Butadiene (BD)</option>
-            </select>
-        </div>
-
-        <div class="stats-section">
+        <div class="collapsible-header" onclick="toggleSection('stats-sec', 'arr1')">
             <h3>📊 Statistics</h3>
+            <span class="arrow" id="arr1">▼</span>
+        </div>
+        <div class="collapsible-content" id="stats-sec">
             <div class="stat-item" onclick="resetMapView()">
                 <span class="stat-label">Total Companies</span>
                 <span class="stat-number" id="total-count">0</span>
             </div>
             <div class="capacity-box">
-                <div class="capacity-title">Total Capacity</div>
-                <div>
-                    <span class="capacity-value" id="total-capacity">0</span>
-                    <span class="capacity-unit">kt/year</span>
-                </div>
+                <div style="font-size: 11px; color: #667eea; font-weight: 600;">Total Capacity</div>
+                <span style="font-size: 20px; font-weight: bold;" id="total-capacity">0</span> <small>kt/year</small>
             </div>
             <div class="capacity-box" style="background: #ff6b6b15;">
-                <div class="capacity-title">Current Loss Rate (Feb)</div>
-                <div>
-                    <span class="capacity-value" id="current-loss-rate" style="color: #ff6b6b;">0</span>
-                    <span class="capacity-unit">%</span>
-                </div>
-                <div class="stat-detail" id="current-loss-detail">Loss: 0 kt</div>
-            </div>
-            <div class="capacity-box" style="background: #4169e115;">
-                <div class="capacity-title">Total Loss Rate (2026)</div>
-                <div>
-                    <span class="capacity-value" id="total-loss-rate" style="color: #4169e1;">0</span>
-                    <span class="capacity-unit">%</span>
-                </div>
-                <div class="stat-detail" id="total-loss-detail">Loss: 0 kt</div>
+                <div style="font-size: 11px; color: #ff6b6b; font-weight: 600;">Current Loss (Feb)</div>
+                <span style="font-size: 20px; font-weight: bold; color: #ff6b6b;" id="current-loss-rate">0</span><small>%</small>
             </div>
             <div class="stat-item" onclick="toggleSubItems('current')">
-                <span class="stat-label">⚫ Current Maintenance <span class="expand-icon" id="current-icon">▼</span></span>
-                <span class="stat-number" id="current-maintenance-count">0</span>
+                <span class="stat-label">⚫ Current Maintenance</span>
+                <span class="stat-number" id="current-maint-count" style="font-size:14px;">0</span>
             </div>
             <div class="sub-items" id="current-sub"></div>
-            <div class="stat-item" onclick="toggleSubItems('future')">
-                <span class="stat-label">🔵 Future Maintenance <span class="expand-icon" id="future-icon">▼</span></span>
-                <span class="stat-number" id="future-maintenance-count">0</span>
-            </div>
-            <div class="sub-items" id="future-sub"></div>
         </div>
 
-        <div class="stats-section">
+        <div class="collapsible-header" onclick="toggleSection('region-sec', 'arr2')">
             <h3>🌍 Regions</h3>
+            <span class="arrow" id="arr2">▼</span>
+        </div>
+        <div class="collapsible-content" id="region-sec">
             <div class="stat-item" onclick="toggleSubItems('asia')">
-                <div style="flex: 1;">
-                    <div class="stat-label"><span class="stat-color" style="background-color: #FF6B6B;"></span>Asia <span class="expand-icon" id="asia-icon">▼</span></div>
-                    <div class="stat-detail"><span id="asia-capacity">0 kt/year</span> (<span id="asia-pct">0%</span>)</div>
-                </div>
-                <span class="stat-number" id="asia-count">0</span>
+                <span class="stat-label"><span style="width:10px;height:10px;background:#FF6B6B;border-radius:50%;"></span>Asia</span>
+                <span id="asia-count" class="stat-number" style="font-size:14px;">0</span>
             </div>
-            <div class="sub-items" id="asia-sub">
-                <div class="sub-item" onclick="flyToCountry('china')"><div class="sub-item-name">🇨🇳 China (<span id="china-count">0</span>)</div><div class="sub-item-detail"><span id="china-capacity">0 kt/year</span> (<span id="china-pct">0%</span>)</div></div>
-                <div class="sub-item" onclick="flyToCountry('japan')"><div class="sub-item-name">🇯🇵 Japan (<span id="japan-count">0</span>)</div><div class="sub-item-detail"><span id="japan-capacity">0 kt/year</span> (<span id="japan-pct">0%</span>)</div></div>
-                <div class="sub-item" onclick="flyToCountry('korea')"><div class="sub-item-name">🇰🇷 Korea (<span id="korea-count">0</span>)</div><div class="sub-item-detail"><span id="korea-capacity">0 kt/year</span> (<span id="korea-pct">0%</span>)</div></div>
-                <div class="sub-item" onclick="flyToCountry('taiwan')"><div class="sub-item-name">🇹🇼 Taiwan (<span id="taiwan-count">0</span>)</div><div class="sub-item-detail"><span id="taiwan-capacity">0 kt/year</span> (<span id="taiwan-pct">0%</span>)</div></div>
-                <div class="sub-item" onclick="flyToCountry('sea')"><div class="sub-item-name">🌏 SEA (<span id="sea-count">0</span>)</div><div class="sub-item-detail"><span id="sea-capacity">0 kt/year</span> (<span id="sea-pct">0%</span>)</div></div>
-            </div>
+            <div class="sub-items" id="asia-sub"></div>
+            
             <div class="stat-item" onclick="flyToRegion('americas')">
-                <div style="flex: 1;"><div class="stat-label"><span class="stat-color" style="background-color: #95E1D3;"></span>Americas</div><div class="stat-detail"><span id="americas-capacity">0 kt/year</span> (<span id="americas-pct">0%</span>)</div></div>
-                <span class="stat-number" id="americas-count">0</span>
+                <span class="stat-label"><span style="width:10px;height:10px;background:#95E1D3;border-radius:50%;"></span>Americas</span>
+                <span id="americas-count" class="stat-number" style="font-size:14px;">0</span>
             </div>
+            
             <div class="stat-item" onclick="toggleSubItems('europe')">
-                <div style="flex: 1;"><div class="stat-label"><span class="stat-color" style="background-color: #4ECDC4;"></span>Europe <span class="expand-icon" id="europe-icon">▼</span></div><div class="stat-detail"><span id="europe-capacity">0 kt/year</span> (<span id="europe-pct">0%</span>)</div></div>
-                <span class="stat-number" id="europe-count">0</span>
+                <span class="stat-label"><span style="width:10px;height:10px;background:#4ECDC4;border-radius:50%;"></span>Europe</span>
+                <span id="europe-count" class="stat-number" style="font-size:14px;">0</span>
             </div>
             <div class="sub-items" id="europe-sub"></div>
-            <div class="stat-item" onclick="flyToRegion('middleeast')">
-                <div style="flex: 1;"><div class="stat-label"><span class="stat-color" style="background-color: #FFB84D;"></span>Middle East</div><div class="stat-detail"><span id="me-capacity">0 kt/year</span> (<span id="me-pct">0%</span>)</div></div>
-                <span class="stat-number" id="me-count">0</span>
-            </div>
-            <div class="stat-item" onclick="flyToRegion('russia')">
-                <div style="flex: 1;"><div class="stat-label"><span class="stat-color" style="background-color: #C7CEEA;"></span>Russia</div><div class="stat-detail"><span id="russia-capacity">0 kt/year</span> (<span id="russia-pct">0%</span>)</div></div>
-                <span class="stat-number" id="russia-count">0</span>
-            </div>
         </div>
 
-        <div class="legend-section">
-            <h3>📍 Status</h3>
-            <div class="legend-item" onclick="showMaintenanceMarkers('current')">
-                <div class="legend-marker" style="background-color: black;"></div><span>Current Maintenance</span>
-            </div>
-            <div class="legend-item" onclick="showMaintenanceMarkers('future')">
-                <div class="legend-marker" style="background-color: #4169E1; clip-path: polygon(50% 0%, 0% 100%, 100% 100%);"></div><span>Future Maintenance</span>
-            </div>
-            <div class="size-legend">
-                <h3 style="margin-bottom: 8px;">📏 Capacity</h3>
-                <div class="size-item"><div class="size-circle" style="width: 10px; height: 10px;"></div><span>0-100 kt</span></div>
-                <div class="size-item"><div class="size-circle" style="width: 14px; height: 14px;"></div><span>100-300 kt</span></div>
-                <div class="size-item"><div class="size-circle" style="width: 18px; height: 18px;"></div><span>300-500 kt</span></div>
-                <div class="size-item"><div class="size-circle" style="width: 24px; height: 24px;"></div><span>500-700 kt</span></div>
-                <div class="size-item"><div class="size-circle" style="width: 30px; height: 30px;"></div><span>700+ kt</span></div>
+        <div class="collapsible-header" onclick="toggleSection('legend-sec', 'arr3')">
+            <h3>📍 Legend</h3>
+            <span class="arrow" id="arr3">▼</span>
+        </div>
+        <div class="collapsible-content" id="legend-sec">
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:12px; height:12px; background:black; border-radius:50%;"></div> 현재 정기보수 (검정 핀)
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-bottom:12px solid #4169E1;"></div> 정기보수 예정 (파랑 삼각)
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-/* 사이드바 토글 함수 */
+let map, allMarkers = [], clusters = [];
+
+// UI 제어 함수
 function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
+    const sb = document.getElementById('sidebar');
     const icon = document.getElementById('toggle-icon');
-    sidebar.classList.toggle('collapsed');
-    
-    if (sidebar.classList.contains('collapsed')) {
-        icon.innerText = '◀';
-    } else {
-        icon.innerText = '▶';
-    }
-    
-    // 지도 크기 재조정
-    setTimeout(() => { map.invalidateSize(); }, 300);
+    sb.classList.toggle('collapsed');
+    icon.innerText = sb.classList.contains('collapsed') ? '◀' : '▶';
+    setTimeout(() => map.invalidateSize(), 300);
 }
 
-/* 원료 변경 핸들러 (확장용) */
-function changeMaterial(val) {
-    console.log("Selected Material:", val);
-    // 향후 원료별 data.json을 분리하여 호출하는 로직을 여기에 추가할 수 있습니다.
-    // fetch(val.toLowerCase() + '_data.json')...
+function toggleSection(id, arrId) {
+    document.getElementById(id).classList.toggle('hidden');
+    document.getElementById(arrId).classList.toggle('rotated');
 }
 
-// ... (이하 기존 스크립트 로직 동일)
-let map;
-let allMarkers = [];
-let clusters = [];
-let currentMaintenanceList = [];
-let futureMaintenanceList = [];
+function toggleSubItems(id) {
+    const el = document.getElementById(id + '-sub');
+    if (el) el.classList.toggle('active');
+}
 
-const monthDays = {
-'1월': 31, '2월': 28, '3월': 31, '4월': 30, '5월': 31, '6월': 30,
-'7월': 31, '8월': 31, '9월': 30, '10월': 31, '11월': 30, '12월': 31
-};
-
+// 데이터 로드
 fetch('data.json')
-.then(response => response.json())
-.then(data => {
-    clusters = data.clusters;
-    initMap();
-})
-.catch(error => {
-    console.error('데이터 로드 실패:', error);
-    alert('지도 데이터를 불러올 수 없습니다.');
-});
+    .then(res => res.json())
+    .then(data => {
+        clusters = data.clusters;
+        initMap();
+    })
+    .catch(err => console.error("데이터 로드 실패. data.json 파일을 확인하세요."));
 
 function initMap() {
     map = L.map('map');
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap © CARTO'
-    }).addTo(map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
 
-    // [기존의 모든 통계 및 마커 생성 로직이 그대로 들어갑니다]
-    // (사용자가 제공한 스크립트의 나머지 부분을 그대로 유지하십시오)
-    processData(); 
-}
-
-// 기존 스크립트 함수들 (toggleSubItems, flyToRegion 등) 모두 동일하게 유지...
-// [축약을 위해 나머지 기존 함수 코드는 생략합니다. 기존 코드의 스크립트 부분을 하단에 붙여넣으시면 됩니다.]
-
-function processData() {
-    // 마커 추가 및 통계 계산 로직 (기존 코드의 clusters.forEach 부분)
-    let stats = {
-        totalCompanies: 0, totalCapacity: 0, totalLoss: 0, currentLoss: 0, futureLoss: 0,
-        currentMaintCount: 0, futureMaintCount: 0,
-        regions: { asia: { count: 0, capacity: 0 }, americas: { count: 0, capacity: 0 }, europe: { count: 0, capacity: 0 }, middleeast: { count: 0, capacity: 0 }, russia: { count: 0, capacity: 0 } },
-        countries: { china: { count: 0, capacity: 0 }, japan: { count: 0, capacity: 0 }, korea: { count: 0, capacity: 0 }, taiwan: { count: 0, capacity: 0 }, sea: { count: 0, capacity: 0 } },
-        europeCountries: {}
-    };
+    let stats = { totalCap: 0, count: 0, currentMaint: 0, asia: 0, americas: 0, europe: 0, currentLoss: 0 };
 
     clusters.forEach(cluster => {
-        cluster.companies.forEach(company => {
-            stats.totalCompanies++;
-            const cap = company.capacity === 'N/A' || !company.capacity ? 0 : parseInt(company.capacity);
-            stats.totalCapacity += cap;
-            // ... (기존 통계 계산 로직들)
+        const isCurrent = cluster.companies.some(c => c.is_current_maintenance);
+        const isFuture = cluster.companies.some(c => c.has_future_maintenance);
+
+        cluster.companies.forEach(c => {
+            stats.count++;
+            const cap = parseInt(c.capacity) || 0;
+            stats.totalCap += cap;
+
+            // 지역 분류
+            if (['KOREA, SOUTH', 'CHINA (MAINLAND)', 'JAPAN', 'TAIWAN'].includes(c.country)) stats.asia++;
+            else if (['USA', 'CANADA'].includes(c.country)) stats.americas++;
+            else stats.europe++;
+
+            if (c.is_current_maintenance) {
+                stats.currentMaint++;
+                stats.currentLoss += (cap / 12); // 단순 월간 로스 추정
+                addMaintList('current-sub', c, cluster);
+            }
         });
-        // ... (마커 생성 및 팝업 로직)
-        addMarker(cluster);
+
+        drawMarker(cluster, isCurrent, isFuture);
     });
 
-    updateUI(stats);
-    const bounds = L.latLngBounds(clusters.map(c => [c.lat, c.lng]));
-    map.fitBounds(bounds, { padding: [50, 50] });
+    // UI 수치 업데이트
+    document.getElementById('total-count').textContent = stats.count;
+    document.getElementById('total-capacity').textContent = stats.totalCap.toLocaleString();
+    document.getElementById('current-loss-rate').textContent = ((stats.currentLoss / stats.totalCap) * 100).toFixed(1);
+    document.getElementById('current-maint-count').textContent = stats.currentMaint;
+    document.getElementById('asia-count').textContent = stats.asia;
+    document.getElementById('americas-count').textContent = stats.americas;
+    document.getElementById('europe-count').textContent = stats.europe;
+
+    resetMapView();
 }
 
-/* 추가된/수정된 나머지 헬퍼 함수들은 기존 코드를 따릅니다. */
-function addMarker(cluster) { /* 기존 마커 생성 코드 */ }
-function updateUI(stats) { /* 기존 UI 업데이트 코드 */ }
-function toggleSubItems(type) {
-    const subDiv = document.getElementById(type + '-sub');
-    const icon = document.getElementById(type + '-icon');
-    if (subDiv && icon) {
-        subDiv.classList.toggle('active');
-        icon.classList.toggle('expanded');
-    } else {
-        flyToRegion(type);
-    }
+function drawMarker(cluster, isCurrent, isFuture) {
+    let color = isCurrent ? 'black' : '#667eea';
+    if (isFuture) color = '#4169E1';
+
+    const iconHtml = isFuture 
+        ? `<svg width="20" height="24"><polygon points="10,2 2,22 18,22" fill="${color}" stroke="white" stroke-width="2"/></svg>`
+        : `<svg width="20" height="24"><path d="M10,2 C6,2 3,5 3,9 C3,14 10,22 10,22 C10,22 17,14 17,9 C17,5 14,2 10,2 Z" fill="${color}" stroke="white" stroke-width="2"/></svg>`;
+
+    const marker = L.marker([cluster.lat, cluster.lng], {
+        icon: L.divIcon({ className: 'custom-marker' + (isFuture ? ' pulse-marker' : ''), html: iconHtml, iconSize: [20, 24], iconAnchor: [10, 24] })
+    }).addTo(map);
+
+    marker.bindPopup(`<b>${cluster.location}</b><br>${cluster.companies.length} 업체 가동 중`);
+    allMarkers.push(marker);
 }
-function flyToRegion(region) { /* 기존 코드 */ }
-function flyToCountry(country) { /* 기존 코드 */ }
-function flyToCompany(lat, lng) { /* 기존 코드 */ }
-function showMaintenanceMarkers(type) { /* 기존 코드 */ }
+
+function addMaintList(containerId, company, cluster) {
+    const div = document.createElement('div');
+    div.className = 'sub-item';
+    div.innerHTML = `<b>${company.company}</b><br><small>${cluster.location} | ${company.capacity}kt</small>`;
+    div.onclick = () => map.flyTo([cluster.lat, cluster.lng], 8);
+    document.getElementById(containerId).appendChild(div);
+}
+
+function flyToRegion(r) { map.flyTo([30, 0], 2); }
 function resetMapView() {
-    const bounds = L.latLngBounds(clusters.map(c => [c.lat, c.lng]));
-    map.fitBounds(bounds, { padding: [50, 50] });
+    if (clusters.length) map.fitBounds(L.latLngBounds(clusters.map(c => [c.lat, c.lng])), { padding: [50, 50] });
 }
 </script>
 </body>
