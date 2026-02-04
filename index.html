@@ -9,68 +9,84 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f5f5; overflow: hidden; }
-        .container { display: flex; height: 100vh; width: 100vw; position: relative; }
+        .container { display: flex; height: 100vh; width: 100vw; position: relative; overflow: hidden; }
 
         /* 지도 영역 */
         .map-section { flex: 1; height: 100%; position: relative; transition: all 0.4s ease; }
-        #map { width: 100%; height: 100%; }
+        #map { width: 100%; height: 100%; z-index: 1; }
 
         /* 사이드바 (오른쪽 배치) */
         .sidebar { 
-            width: 380px; height: 100%; background: white; 
-            box-shadow: -2px 0 10px rgba(0,0,0,0.1); 
+            width: 400px; height: 100%; background: white; 
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1000; position: relative; overflow-y: auto;
         }
-        .container.sidebar-hidden .sidebar { transform: translateX(380px); width: 0; }
+        .container.collapsed .sidebar { transform: translateX(400px); width: 0; }
 
-        /* 슬라이드 핸들 버튼 (지도 위 고정) */
+        /* 슬라이드 핸들 버튼 */
         #toggle-btn {
-            position: absolute; right: 20px; top: 20px;
-            width: 50px; height: 50px; background: #667eea; color: white;
-            border: none; border-radius: 12px; cursor: pointer;
-            z-index: 1100; font-size: 20px; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: absolute; left: -30px; top: 50%; transform: translateY(-50%);
+            width: 30px; height: 80px; background: #667eea; color: white;
+            border: none; border-radius: 12px 0 0 12px; cursor: pointer;
+            z-index: 1100; font-size: 18px; display: flex; align-items: center; justify-content: center;
+            box-shadow: -3px 0 10px rgba(0,0,0,0.2);
         }
 
-        /* 헤더 */
+        /* 헤더 브랜딩 */
         #header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; }
-        #header h1 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-        .archive-selector {
-            width: 100%; padding: 8px; border-radius: 6px; border: none;
+        #header h1 { font-size: 19px; font-weight: 600; margin-bottom: 2px; }
+        .made-by { font-size: 13px; font-weight: bold; opacity: 0.9; margin-bottom: 12px; letter-spacing: 0.5px; }
+        .archive-select {
+            width: 100%; padding: 10px; border-radius: 6px; border: none;
             background: rgba(255,255,255,0.2); color: white; font-weight: bold; cursor: pointer;
         }
-        .archive-selector option { color: #333; }
 
         /* 통계 섹션 */
-        .stats-section { padding: 20px; border-bottom: 1px solid #eee; }
+        .stats-section { padding: 15px 20px; border-bottom: 1px solid #eee; }
         .stats-section h3 { font-size: 13px; color: #667eea; margin-bottom: 12px; text-transform: uppercase; font-weight: 600; }
         
-        .capacity-box { padding: 15px; border-radius: 8px; margin-bottom: 10px; background: #f8fbff; border-left: 4px solid #667eea; }
+        .capacity-box { padding: 15px; border-radius: 10px; margin-bottom: 10px; background: #f8fbff; border-left: 5px solid #667eea; }
         .capacity-title { font-size: 11px; color: #667eea; font-weight: bold; margin-bottom: 5px; }
-        .capacity-value { font-size: 20px; font-weight: 800; color: #333; }
-        .stat-detail { font-size: 11px; color: #666; margin-top: 3px; }
+        .capacity-value { font-size: 24px; font-weight: 800; color: #333; }
+        .denom-info { font-size: 11px; color: #666; margin-top: 4px; border-top: 1px dashed #ddd; padding-top: 4px; }
 
-        /* 내비게이션 버튼 */
-        .nav-group { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-        .nav-btn { padding: 6px 10px; font-size: 11px; background: #f0f2f5; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; }
-        .nav-btn:hover { background: #667eea; color: white; }
+        /* 지역 리스트 */
+        .region-item { margin-bottom: 8px; border-radius: 8px; border: 1px solid #eee; overflow: hidden; }
+        .region-header { 
+            padding: 10px 12px; background: #fcfcfc; display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; font-size: 13px; font-weight: 600;
+        }
+        .region-header:hover { background: #f0f5ff; }
+        .region-stats { font-size: 11px; color: #667eea; font-weight: bold; }
+        
+        .country-list { background: #fff; border-top: 1px solid #f0f0f0; }
+        .country-item { 
+            padding: 8px 15px 8px 30px; display: flex; justify-content: space-between; align-items: center;
+            font-size: 12px; cursor: pointer; border-bottom: 1px solid #fafafa;
+        }
+        .country-item:hover { background: #f9f9f9; color: #667eea; }
+        .country-pct { font-size: 10px; color: #999; }
 
-        .maint-item { padding: 10px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 5px; cursor: pointer; font-size: 11px; }
-        .maint-item:hover { background: #f0f5ff; border-color: #667eea; }
+        /* 마커 효과 */
+        .marker-svg { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); transition: transform 0.2s; }
+        .maint-item { padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 6px; font-size: 11px; background: #fff; cursor: pointer; }
+        .maint-item:hover { border-color: #667eea; transform: translateX(-3px); }
     </style>
 </head>
 <body>
     <div class="container" id="main-container">
         <div class="map-section">
             <div id="map"></div>
-            <button id="toggle-btn" onclick="toggleSidebar()">☰</button>
         </div>
         
         <div class="sidebar" id="sidebar">
+            <button id="toggle-btn" onclick="toggleSidebar()">◀</button>
+
             <div id="header">
                 <h1>Global SM Companies Status</h1>
-                <select class="archive-selector" onchange="switchProduct(this.value)">
+                <div class="made-by">Made by LAM</div>
+                <select class="archive-select" onchange="switchProduct(this.value)">
                     <option value="data.json">Styrene Monomer (SM)</option>
                     <option value="data_an.json">AN (Acrylonitrile) - 준비중</option>
                     <option value="data_bd.json">Butadiene (BD) - 준비중</option>
@@ -78,39 +94,26 @@
             </div>
 
             <div class="stats-section">
-                <h3>📊 Statistics</h3>
-                <div class="capacity-box">
-                    <div class="capacity-title">Total Capacity</div>
-                    <span class="capacity-value" id="total-capacity">0</span> <small>kt/year</small>
-                </div>
-
-                <div class="capacity-box" style="background: #fff5f5; border-color: #ff6b6b;">
-                    <div class="capacity-title" style="color: #ff6b6b;">Current Loss Rate (Feb)</div>
-                    <span class="capacity-value" id="current-loss-rate" style="color: #ff6b6b;">0.00%</span>
-                    <div class="stat-detail" id="current-loss-kt">Loss: 0 kt</div>
-                </div>
-
+                <h3>📊 2026 Global Balance</h3>
                 <div class="capacity-box" style="background: #f0f4ff; border-color: #4169e1;">
-                    <div class="capacity-title" style="color: #4169e1;">Total Loss Rate (2026)</div>
+                    <div class="capacity-title" style="color: #4169e1;">Total Cumulative Loss Rate (2026)</div>
                     <span class="capacity-value" id="total-loss-rate" style="color: #4169e1;">0.00%</span>
-                    <div class="stat-detail" id="total-loss-kt">Loss: 0 kt</div>
+                    <div class="denom-info" id="total-denom">Loss: 0 / Total Cap: 0 kt</div>
+                </div>
+                <div class="capacity-box" style="background: #fff5f5; border-color: #ff6b6b;">
+                    <div class="capacity-title" style="color: #ff6b6b;">Current Loss Rate (Feb 2026)</div>
+                    <span class="capacity-value" id="current-loss-rate" style="color: #ff6b6b;">0.00%</span>
+                    <div class="denom-info" id="current-denom">Loss: 0 / Monthly Base: 0 kt</div>
                 </div>
             </div>
 
             <div class="stats-section">
-                <h3>🌍 Navigation</h3>
-                <div class="nav-group">
-                    <button class="nav-btn" onclick="flyTo('korea')">🇰🇷 Korea</button>
-                    <button class="nav-btn" onclick="flyTo('china')">🇨🇳 China</button>
-                    <button class="nav-btn" onclick="flyTo('japan')">🇯🇵 Japan</button>
-                    <button class="nav-btn" onclick="flyTo('taiwan')">🇹🇼 Taiwan</button>
-                    <button class="nav-btn" onclick="flyTo('europe')">🇪🇺 Europe</button>
-                    <button class="nav-btn" onclick="flyTo('usa')">🇺🇸 USA</button>
-                </div>
+                <h3>🌍 Regional Statistics</h3>
+                <div id="region-list"></div>
             </div>
 
             <div class="stats-section">
-                <h3>📍 Current Maintenance</h3>
+                <h3>📍 Maint. List (Feb)</h3>
                 <div id="current-list"></div>
             </div>
         </div>
@@ -118,8 +121,8 @@
 
     <script>
         let map, clusters = [], allMarkers = [];
-        const today = new Date('2026-02-04'); // 기준 날짜
-        const monthDays = { '1월':31, '2월':28, '3월':31, '4월':30, '5월':31, '6월':30, '7월':31, '8월':31, '9월':30, '10월':31, '11월':30, '12월':31 };
+        const today = new Date('2026-02-04');
+        const monthDays = { 1:31, 2:28, 3:31, 4:30, 5:31, 6:30, 7:31, 8:31, 9:30, 10:31, 11:30, 12:31 };
 
         function initApp() {
             map = L.map('map').setView([25, 115], 3);
@@ -132,15 +135,21 @@
                 const res = await fetch(file);
                 const data = await res.json();
                 clusters = data.clusters;
-                updateMapAndStats();
-            } catch(e) { console.error("데이터 로드 실패"); }
+                updateApp();
+            } catch(e) { console.error("Data load failed"); }
         }
 
-        function updateMapAndStats() {
+        function updateApp() {
             allMarkers.forEach(m => map.removeLayer(m));
             allMarkers = [];
 
-            let totalCap = 0, currentLoss = 0, yearlyLoss = 0;
+            let totalGlobalCap = 0, currentLossSum = 0, yearlyLossSum = 0;
+            let regStats = {
+                'Asia': { cap: 0, countries: { 'CHINA (MAINLAND)': 0, 'KOREA, SOUTH': 0, 'JAPAN': 0, 'TAIWAN': 0, 'SEA': 0 } },
+                'Americas': { cap: 0 }, 'Europe': { cap: 0 }, 'Middle East': { cap: 0 }, 'Russia': { cap: 0 }
+            };
+
+            const febStart = new Date('2026-02-01'), febEnd = new Date('2026-02-28');
             const listDiv = document.getElementById('current-list');
             listDiv.innerHTML = '';
 
@@ -149,78 +158,97 @@
 
                 c.companies.forEach(comp => {
                     const cap = parseFloat(comp.capacity) || 0;
-                    totalCap += cap;
+                    totalGlobalCap += cap;
                     clusterCap += cap;
 
-                    let companyYearlyDays = 0;
-                    let companyIsCurrent = false;
-
-                    // 1. 날짜 기반 계산 (maint_start)
-                    if (comp.maint_start && comp.maint_end) {
-                        const start = new Date(comp.maint_start);
-                        const end = new Date(comp.maint_end);
-                        const yearStart = new Date('2026-01-01'), yearEnd = new Date('2026-12-31');
-                        const overlap = Math.max(0, Math.min(end, yearEnd) - Math.max(start, yearStart)) / (1000*60*60*24) + 1;
-                        companyYearlyDays = overlap;
-                        if (today >= start && today <= end) companyIsCurrent = true;
-                    } 
-                    // 2. 텍스트 기반 보완 (로스 0 방지)
-                    else if (comp.maintenance && comp.maintenance !== '없음') {
-                        Object.keys(monthDays).forEach(m => {
-                            if (comp.maintenance.includes(m)) {
-                                companyYearlyDays += monthDays[m];
-                                if (m === '2월') companyIsCurrent = true;
-                            }
-                        });
+                    // 지역 통계
+                    let reg = ['USA','CANADA','BRAZIL'].includes(c.country) ? 'Americas' :
+                              ['BELGIUM','FRANCE','GERMANY','ITALY','NETHERLANDS','SPAIN','POLAND','CZECH REPUBLIC'].includes(c.country) ? 'Europe' :
+                              ['SAUDI ARABIA','KUWAIT','IRAN'].includes(c.country) ? 'Middle East' :
+                              c.country === 'RUSSIA' ? 'Russia' : 'Asia';
+                    
+                    if (regStats[reg]) regStats[reg].cap += cap;
+                    if (reg === 'Asia') {
+                        if (regStats.Asia.countries[c.country] !== undefined) regStats.Asia.countries[c.country] += cap;
+                        else regStats.Asia.countries['SEA'] += cap;
                     }
 
-                    if (comp.is_current_maintenance) companyIsCurrent = true;
+                    // 로스 계산
+                    if (comp.maint_start) {
+                        const start = new Date(comp.maint_start), end = new Date(comp.maint_end);
+                        const yrOverlap = Math.max(0, Math.min(end, new Date('2026-12-31')) - Math.max(start, new Date('2026-01-01'))) / (1000*60*60*24) + 1;
+                        if(yrOverlap > 0) yearlyLossSum += (cap / 365) * yrOverlap;
 
-                    yearlyLoss += (cap / 365) * companyYearlyDays;
-                    if (companyIsCurrent) {
-                        currentLoss += (cap / 365) * 28; // 2월 기준
-                        isCurrent = true;
-                        listDiv.innerHTML += `<div class="maint-item" onclick="map.flyTo([${c.lat}, ${c.lng}], 8)"><b>${comp.company}</b><br>${c.location} | Cap: ${comp.capacity}kt</div>`;
+                        const febOverlap = Math.max(0, Math.min(end, febEnd) - Math.max(start, febStart)) / (1000*60*60*24) + 1;
+                        if(febOverlap > 0) {
+                            currentLossSum += (cap / 365) * febOverlap;
+                            isCurrent = true;
+                            listDiv.innerHTML += `<div class="maint-item" onclick="map.flyTo([${c.lat}, ${c.lng}], 8)"><b>${comp.company}</b><br>Loss: ${Math.round((cap/365)*febOverlap)}kt</div>`;
+                        }
+                        if (start > today) isFuture = true;
+                        if (today >= start && today <= end) isCurrent = true;
                     }
                 });
 
-                // 케파 비례 마커 크기
-                let radius = 7;
-                if (clusterCap < 100) radius = 5;
-                else if (clusterCap < 300) radius = 9;
-                else if (clusterCap < 500) radius = 13;
-                else radius = 22;
-
-                const color = isCurrent ? "#000000" : "#667eea";
-                const marker = L.circleMarker([c.lat, c.lng], {
-                    radius: radius, fillColor: color, color: "white", weight: 2, fillOpacity: 0.7
-                }).addTo(map);
+                // 마커 크기 및 형태 (주황 삼각형 반영)
+                let radius = clusterCap < 100 ? 5 : clusterCap < 300 ? 9 : clusterCap < 500 ? 13 : clusterCap < 800 ? 18 : 25;
+                const color = isCurrent ? "#000000" : (isFuture ? "#e67e22" : "#667eea");
+                const s = radius * 2;
                 
-                let popup = `<b>${c.location}, ${c.country}</b><br>Total Cap: ${clusterCap.toLocaleString()}kt`;
-                marker.bindPopup(popup);
+                const icon = L.divIcon({
+                    className: 'marker-svg',
+                    html: isFuture ? 
+                        `<svg width="${s}" height="${s}" viewBox="0 0 100 100"><polygon points="50,10 90,90 10,90" fill="${color}" stroke="white" stroke-width="5"/></svg>` :
+                        `<svg width="${s}" height="${s}" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="${color}" stroke="white" stroke-width="8"/></svg>`,
+                    iconSize: [s, s], iconAnchor: [s/2, s/2]
+                });
+
+                const marker = L.marker([c.lat, c.lng], { icon }).addTo(map);
+                marker.bindPopup(`<b>${c.location}</b><br>Cap: ${clusterCap}kt`);
                 allMarkers.push(marker);
             });
 
             // 수치 업데이트
-            document.getElementById('total-capacity').innerText = totalCap.toLocaleString();
-            document.getElementById('current-loss-rate').innerText = (currentLoss / (totalCap/12) * 100).toFixed(2) + '%';
-            document.getElementById('current-loss-kt').innerText = `Loss: ${Math.round(currentLoss).toLocaleString()} kt`;
-            document.getElementById('total-loss-rate').innerText = (yearlyLoss / totalCap * 100).toFixed(2) + '%';
-            document.getElementById('total-loss-kt').innerText = `Total Loss: ${Math.round(yearlyLoss).toLocaleString()} kt`;
+            const monthlyBase = totalGlobalCap / 12;
+            document.getElementById('total-loss-rate').innerText = (yearlyLossSum / totalGlobalCap * 100).toFixed(2) + '%';
+            document.getElementById('total-denom').innerText = `Loss: ${Math.round(yearlyLossSum).toLocaleString()} / Total Cap: ${Math.round(totalGlobalCap).toLocaleString()} kt`;
+            document.getElementById('current-loss-rate').innerText = (currentLossSum / monthlyBase * 100).toFixed(2) + '%';
+            document.getElementById('current-denom').innerText = `Loss: ${Math.round(currentLossSum).toLocaleString()} / Monthly Base: ${Math.round(monthlyBase).toLocaleString()} kt`;
+
+            // 지역 통계 리스트 생성
+            const regionList = document.getElementById('region-list');
+            regionList.innerHTML = '';
+            Object.keys(regStats).forEach(reg => {
+                const rData = regStats[reg];
+                const rPct = (rData.cap / totalGlobalCap * 100).toFixed(1);
+                let html = `<div class="region-item"><div class="region-header" onclick="flyTo('${reg.toLowerCase().replace(' ', '')}')"><span>${reg}</span><span class="region-stats">${rData.cap.toLocaleString()} kt (${rPct}%)</span></div>`;
+                if (reg === 'Asia') {
+                    html += `<div class="country-list">`;
+                    Object.keys(rData.countries).forEach(count => {
+                        const cCap = rData.countries[count];
+                        const cPct = (cCap / totalGlobalCap * 100).toFixed(1);
+                        const label = count === 'CHINA (MAINLAND)' ? '🇨🇳 China' : count === 'KOREA, SOUTH' ? '🇰🇷 Korea' : count === 'JAPAN' ? '🇯🇵 Japan' : count === 'TAIWAN' ? '🇹🇼 Taiwan' : '🌏 SEA';
+                        html += `<div class="country-item" onclick="flyTo('${count === 'CHINA (MAINLAND)' ? 'china' : count === 'KOREA, SOUTH' ? 'korea' : count.toLowerCase()}')"><span>${label}</span><span class="country-pct">${cCap.toLocaleString()} kt (${cPct}%)</span></div>`;
+                    });
+                    html += `</div>`;
+                }
+                html += `</div>`;
+                regionList.innerHTML += html;
+            });
         }
 
         function toggleSidebar() {
             const container = document.getElementById('main-container');
-            container.classList.toggle('sidebar-hidden');
-            setTimeout(() => { map.invalidateSize(); }, 400);
+            container.classList.toggle('collapsed');
+            document.getElementById('toggle-btn').innerText = container.classList.contains('collapsed') ? '◀' : '▶';
+            setTimeout(() => { map.invalidateSize(); }, 450);
         }
 
         function flyTo(loc) {
-            const targets = { 'korea':[[36.5, 127], 7], 'china':[[35, 110], 5], 'japan':[[36, 138], 6], 'taiwan':[[23.5, 121], 7], 'europe':[[50, 10], 4], 'usa':[[38, -98], 4] };
-            map.flyTo(targets[loc][0], targets[loc][1]);
+            const t = { 'asia':[[20, 110], 4], 'korea':[[36.5, 127], 7], 'china':[[35, 110], 5], 'japan':[[36, 138], 6], 'taiwan':[[23.5, 121], 7], 'sea':[[5, 110], 5], 'europe':[[50, 10], 4], 'americas':[[38, -98], 4], 'middleeast':[[25, 45], 4], 'russia':[[55, 60], 4] };
+            if(t[loc]) map.flyTo(t[loc][0], t[loc][1]);
         }
         function switchProduct(val) { loadData(val); }
-
         window.onload = initApp;
     </script>
 </body>
