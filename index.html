@@ -3,50 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Petrochemical Archive</title>
+    <title>Global Petrochemical Market Map (2026)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
+        /* 기본 레이아웃 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f5f5; overflow: hidden; }
-        
-        .container { display: flex; height: 100vh; position: relative; width: 100vw; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; overflow: hidden; }
+        .container { display: flex; height: 100vh; position: relative; }
         
         /* 지도 섹션 */
-        .map-section { flex: 1; display: flex; flex-direction: column; position: relative; transition: all 0.3s ease; }
-        #map { flex: 1; width: 100%; }
+        .map-section { flex: 1; position: relative; display: flex; flex-direction: column; transition: all 0.3s ease; }
+        #map { flex: 1; width: 100%; z-index: 1; }
         
-        /* 사이드바(일람) 스타일 */
+        /* 사이드바 스타일 */
         .sidebar { 
-            width: 380px; 
-            background: white; 
-            overflow-y: auto; 
-            box-shadow: -2px 0 10px rgba(0,0,0,0.1); 
+            width: 400px; background: white; overflow-y: auto; 
+            box-shadow: -3px 0 15px rgba(0,0,0,0.1); 
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
             z-index: 1000;
         }
-        
-        /* 사이드바 숨김 클래스 */
         .sidebar.collapsed { width: 0 !important; min-width: 0 !important; opacity: 0; pointer-events: none; }
 
-        /* 슬라이드 토글 버튼 */
+        /* 토글 버튼 */
         #toggle-btn {
-            position: absolute;
-            right: 380px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 60px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 10px 0 0 10px;
-            cursor: pointer;
-            z-index: 1100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            transition: all 0.3s ease;
-            box-shadow: -2px 0 5px rgba(0,0,0,0
+            position: absolute; right: 400px; top: 50%; transform: translateY(-50%);
+            width: 24px; height: 60px; background: #4b6cb7; color: white;
+            border: none; border-radius: 10px 0 0 10px; cursor: pointer;
+            z-index: 1100; font-size: 14px; transition: all 0.3s ease;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+        }
+        .container.sidebar-hidden #toggle-btn { right: 0; border-radius: 0 10px 10px 0; }
+
+        /* 헤더/선택기 스타일 */
+        #header { background: linear-gradient(135deg, #182848 0%, #4b6cb7 100%); color: white; padding: 20px; }
+        .archive-select { 
+            width: 100%; padding: 10px; border-radius: 6px; border: none; 
+            background: rgba(255,255,255,0.15); color: white; font-weight: bold; margin-top: 10px;
+        }
+        
+        /* 통계 카드 */
+        .stats-section { padding: 20px; border-bottom: 1px solid #eee; }
+        .month-selector { width: 100%; padding: 10px; border: 2px solid #4b6cb7; border-radius: 6px; font-weight: bold; margin-bottom: 15px; }
+        
+        .capacity-box { padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid transparent; }
+        .capacity-title { font-size: 11px; text-transform: uppercase; font-weight: 700; opacity: 0.8; }
+        .capacity-value { font-size: 24px; font-weight: 800; display: block; margin: 4px 0; }
+        .stat-detail { font-size: 12px; }
+
+        /* 리스트 스타일 */
+        .maint-item { 
+            padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; 
+            cursor: pointer; transition: 0.2s; 
+        }
+        .maint-item:hover { background: #f8fbff; border-color: #4b6cb7; transform: translateX(-3px); }
+        .maint-item.current { border-left: 4px solid #000; background: #f8f8f8; }
+        .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container" id="main-container">
+        <div class="map-section">
+            <div id="header">
+                <h1 id="title">Global Petrochemical Status</h1>
+                <select class="archive-select" onchange="switchArchive(this.value)">
+                    <option value="data.json">Styrene Monomer (SM)</option>
+                    <option value="data_bd.json">Butadiene (BD) - 준비중</option>
+                    <option value="data_bz.json">Benzene (BZ) - 준비중</option>
+                </select>
+            </div>
+            <div id="map"></div>
+            <button id="toggle-btn" onclick="toggleSidebar()">◀</button>
+        </div>
+        
+        <div class="sidebar" id="sidebar">
+            <div class="stats-section">
+                <h3>📅 Market Analysis</h3>
+                <select id="month-select" class="month-selector" onchange="updateDashboard()">
+                    </select>
+
+                <div class="capacity-box" style="background: #fff0f0; color: #d63031; border-color: #d63031;">
+                    <div class="capacity-title"><span id="month-label">2월</span> Forecasted Loss</div>
+                    <span class="capacity-value" id="monthly-rate">0.00%</span>
+                    <div class="stat-detail" id="monthly-loss-kt">0 kt</div>
+                </div>
+
+                <div class="capacity-box" style="background: #f0f5ff; color: #4b6cb7; border-color: #4b6cb7;">
+                    <div class="capacity-title">2026 Yearly Cumulative</div>
+                    <span class="capacity-value" id="yearly-rate">0.00%</span>
+                    <div class="stat-detail" id="yearly-loss-kt">0 kt</div>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3>🔍 Maintenance List (<span id="list-month-label">2월</span>)</h3>
+                <div id="maint-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map, clusters = [], allMarkers = [];
+        const today = new Date('2026-02-04'); // 기준일: 2026년 2월 4일
+        const monthDays = { 1:31, 2:28, 3:31, 4:30, 5:31, 6:30, 7:31, 8:31, 9:30, 10:31, 11:30, 12:31 };
+
+        function initApp() {
+            const select = document.getElementById('month-select');
+            for(let i=1; i<=12; i++) {
+                const opt = document.createElement('option');
+                opt.value = i; opt.innerText = `2026년 ${i}월 Performance`;
+                if(i === 2) opt.selected = true;
+                select.appendChild(opt);
+            }
+            map = L.map('map').setView([25, 120], 3);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+            loadData('data.json');
+        }
+
+        async function loadData(file) {
+            try {
+                const res = await fetch(file);
+                const data = await res.json();
+                clusters = data.clusters;
+                refreshMap();
+                updateDashboard();
+            } catch(e) { console.error("데이터 로드 실패"); }
+        }
+
+        function refreshMap() {
+            allMarkers.forEach(m => map.removeLayer(m));
+            allMarkers = [];
+            
+            clusters.forEach(c => {
+                let isNowOff = false;
+                let willBeOff = false;
+
+                c.companies.forEach(comp => {
+                    if (comp.maint_start && comp.maint_end) {
+                        const start = new Date(comp.maint_start);
+                        const end = new Date(comp.maint_end);
+                        if (today >= start && today <= end) isNowOff = true;
+                        else if (start > today) willBeOff = true;
+                    } else if (comp.is_current_maintenance) isNowOff = true;
+                });
+
+                const color = isNowOff ? "#000000" : (willBeOff ? "#e67e22" : "#4b6cb7");
+                const marker = L.circleMarker([c.lat, c.lng], {
+                    radius: 8, fillColor: color, color: "white", weight: 2, fillOpacity: 0.8
+                }).addTo(map);
+
+                let popup = `<b>${c.location}, ${c.country}</b><br>`;
+                c.companies.forEach(comp => {
+                    const status = (comp.maint_start) ? `${comp.maint_start} ~ ${comp.maint_end}` : comp.maintenance;
+                    popup += `<hr style='margin:5px 0'>${comp.company}<br><small>Cap: ${comp.capacity}kt | Maint: ${status}</small>`;
+                });
+                marker.bindPopup(popup);
+                allMarkers.push(marker);
+            });
+        }
+
+        function updateDashboard() {
+            const selMonth = parseInt(document.getElementById('month-select').value);
+            document.getElementById('month-label').innerText = selMonth + '월';
+            document.getElementById('list-month-label').innerText = selMonth + '월';
+
+            let totalCap = 0, mLossTotal = 0, yLossTotal = 0;
+            const listDiv = document.getElementById('maint-list');
+            listDiv.innerHTML = '';
+
+            const mStart = new Date(2026, selMonth - 1, 1);
+            const mEnd = new Date(2026, selMonth - 1, monthDays[selMonth]);
+
+            clusters.forEach(c => {
+                c.companies.forEach(comp => {
+                    const cap = parseFloat(comp.capacity) || 0;
+                    totalCap += cap;
+
+                    // 정밀 날짜 기반 계산
+                    if (comp.maint_start && comp.maint_end) {
+                        const start = new Date(comp.maint_start);
+                        const end = new Date(comp.maint_end);
+
+                        // 1. 연간 손실 (2026년 내 중단 일수 계산)
+                        const yearStart = new Date(2026, 0, 1);
+                        const yearEnd = new Date(2026, 11, 31);
+                        const overlapYear = Math.max(0, Math.min(end, yearEnd) - Math.max(start, yearStart)) / (1000*60*60*24) + 1;
+                        if(overlapYear > 0) yLossTotal += (cap / 365) * overlapYear;
+
+                        // 2. 선택 월 손실
+                        const overlapMonth = Math.max(0, Math.min(end, mEnd) - Math.max(start, mStart)) / (1000*60*60*24) + 1;
+                        if(overlapMonth > 0) {
+                            const loss = (cap / 365) * overlapMonth;
+                            mLossTotal += loss;
+                            addToList(comp, c, loss, listDiv);
+                        }
+                    } else {
+                        // 기존 텍스트 기반 호환성 유지
+                        if(comp.maintenance.includes(selMonth + '월')) {
+                            const loss = (cap / 365) * monthDays[selMonth];
+                            mLossTotal += loss;
+                            addToList(comp, c, loss, listDiv);
+                        }
+                    }
+                });
+            });
+
+            document.getElementById('monthly-rate').innerText = (mLossTotal / (totalCap/12) * 100).toFixed(2) + '%';
+            document.getElementById('monthly-loss-kt').innerText = `${Math.round(mLossTotal).toLocaleString()} kt`;
+            document.getElementById('yearly-rate').innerText = (yLossTotal / totalCap * 100).toFixed(2) + '%';
+            document.getElementById('yearly-loss-kt').innerText = `${Math.round(yLossTotal).toLocaleString()} kt`;
+        }
+
+        function addToList(comp, cluster, loss, container) {
+            const item = document.createElement('div');
+            const isCurrent = (comp.maint_start && today >= new Date(comp.maint_start) && today <= new Date(comp.maint_end));
+            item.className = `maint-item ${isCurrent ? 'current' : ''}`;
+            item.onclick = () => map.flyTo([cluster.lat, cluster.lng], 8);
+            item.innerHTML = `
+                <div style="font-weight:bold">${comp.company} ${isCurrent ? '<span class="badge" style="background:#000;color:#fff">ACTIVE</span>' : ''}</div>
+                <div style="font-size:11px; color:#666;">${cluster.location} | Loss: ${Math.round(loss)}kt</div>
+                <div style="font-size:10px; color:#4b6cb7;">${comp.maint_start || ''} ~ ${comp.maint_end || ''}</div>
+            `;
+            container.appendChild(item);
+        }
+
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            const cont = document.getElementById('main-container');
+            const btn = document.getElementById('toggle-btn');
+            sb.classList.toggle('collapsed');
+            cont.classList.toggle('sidebar-hidden');
+            btn.innerText = sb.classList.contains('collapsed') ? '▶' : '◀';
+            setTimeout(() => map.invalidateSize(), 350);
+        }
+
+        function switchArchive(file) { loadData(file); }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
